@@ -37,6 +37,13 @@ def add_all_layers_when_all_layers_behaviour_enabled(sender, instance, created, 
         )
 
 
+def _all_layers_layer_order(layer_on_layer_group: LayerOnLayerGroup) -> str:
+    """
+    Sort by layer provider_state, and then alphabetically.
+    """
+    return f'{str(layer_on_layer_group.layer.map_data.provider_state)}{layer_on_layer_group.layer.name}'
+
+
 @receiver(post_save, sender=Layer)
 def add_layer_when_layer_created(sender, instance, created, **kwargs):
     if not isinstance(instance, Layer):
@@ -58,7 +65,7 @@ def add_layer_when_layer_created(sender, instance, created, **kwargs):
         )
         # order layer-on-layer-groups in the layer group alphabetically
         display_order = 0
-        for layer_on_layer_group in sorted(group.layers.all(), key=lambda x: x.layer.name):  # type: ignore
+        for layer_on_layer_group in sorted(group.layers.all(), key=_all_layers_layer_order):  # type: ignore
             layer_on_layer_group.display_order = display_order
             layer_on_layer_group.full_clean()
             layer_on_layer_group.save()
