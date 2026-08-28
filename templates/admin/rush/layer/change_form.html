@@ -6,9 +6,12 @@
     <!--
         This template renders the map Layer change form / preview. 
      -->
-    <link rel="stylesheet" href="{% static 'css/layer_preview.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/rush.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/spinner.css' %}" />
     <div id="injected-media-url" style="display:none;">{{ BASE_MEDIA_URL }}</div>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script type="module" src="{% static 'js/compiled/layer_preview.js' %}"></script>
+    <script type="module" src="{% static 'js/compiled/slider_textbox_input_sync.js' %}"></script>
     <div id="map-spinner" class="spinner"></div>
 {% endblock %}

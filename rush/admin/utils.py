@@ -1,13 +1,25 @@
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from typing import Any, Callable, List, Tuple, TypeVar, Union
+from typing import Any
 
 from django import forms
 from django.contrib import admin
 from django.db import models
 from django.utils.html import format_html
 from django.utils.safestring import SafeString, SafeText, mark_safe
-from typing_extensions import Generic, TypeVarTuple, Unpack
+
+
+class SuperuserStrictCleanMixin:
+    """
+    Mixin for ModelAdmin and InlineAdmin classes that hides all fields ending with
+    `_strict_clean` from non-superusers. Superusers can still see and edit these fields.
+    """
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        if not request.user.is_superuser:
+            fields = [f for f in fields if not f.endswith("_strict_clean")]
+        return fields
 
 
 def get_decimal(obj: Any) -> Decimal:
@@ -65,7 +77,7 @@ class SliderAndTextboxNumberInput(forms.Widget):
         def render(input: forms.NumberInput, id: str) -> SafeText:
             return input.render(
                 name,
-                get_decimal(value),
+                round(get_decimal(value), 2),
                 attrs={**self.attrs, "id": id},
                 renderer=renderer,
             )

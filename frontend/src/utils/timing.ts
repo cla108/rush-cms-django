@@ -62,3 +62,28 @@ export function expectEl(id: string): HTMLElement {
   }
   return el;
 }
+
+/**
+ * Find and return the first element matching against the provided selector, or 
+ * throw an error if the element couldn't be found.
+ * @param element the element to run a selector on.
+ * @param selector the selector string to check against.
+ */
+export function expectQuerySelector(element: HTMLElement | Document, selector: string): HTMLElement {
+  const el = element.querySelector(selector);
+  if (el === null || !(el instanceof HTMLElement)) {
+    throw new Error("Expected HTML DOM element matching '" + selector + "' to exist as a child of '" + element + "'!");
+  }
+  return el;
+}
+
+export function htmlElementQuerySelectAll(element: HTMLElement | Document, selector: string): Array<HTMLElement> {
+  const els = element.querySelectorAll(selector);
+  const arr = [];
+  for (let el of els){
+    if (el instanceof HTMLElement){
+      arr.push(el);
+    }
+  }
+  return arr;
+}

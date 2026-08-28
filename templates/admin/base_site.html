@@ -29,6 +29,15 @@
   .leaflet-popup-content *{
     all: revert;
   }
+  /**
+   * The default django styles were still changing color on-hover over input
+   * buttons for some reason. This patches that visual issue. 
+   */
+  input[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 </style>
 {% endblock %}
 

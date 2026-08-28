@@ -3,68 +3,80 @@ from unittest.mock import Mock
 import pytest
 from django.core.exceptions import ValidationError
 
+from rush.models import GuessedMimeType
 from rush.models.validators import *
 from rush.tests.models.helpers import FakeFile
 
 
-def valid_file(name: str) -> tuple[Mock, bool, str]:
-    return (FakeFile(name), False, "")
+def valid_file(
+    name: str,
+    valid_names=None,
+    invalid_names=None,
+) -> tuple[Mock, bool, str, List[str] | None, List[str] | None]:
+    valid_names = [] if valid_names is None else valid_names
+    invalid_names = [] if invalid_names is None else invalid_names
+    return (FakeFile(name), False, "", valid_names, invalid_names)
 
 
-def invalid_file(name: str, err_msg: str) -> tuple[Mock, bool, str]:
-    return (FakeFile(name), True, err_msg)
+def invalid_file(
+    name: str,
+    err_msg: str,
+    valid_names=None,
+    invalid_names=None,
+) -> tuple[Mock, bool, str, List[str] | None, List[str] | None]:
+    valid_names = [] if valid_names is None else valid_names
+    invalid_names = [] if invalid_names is None else invalid_names
+    return (FakeFile(name), True, err_msg, valid_names, invalid_names)
 
 
-def image_test_params():
-    return [
-        # Test lower-case file types
-        valid_file("test.png"),
-        valid_file("test.jpg"),
-        valid_file("test.jpeg"),
-        # Test upper-case file types
-        valid_file("test.PNG"),
-        valid_file("test.JPG"),
-        valid_file("test.JPEG"),
-        # Test recognizable, but unsupported file types
-        invalid_file("test.html", 'Unsupported file type "text/html"'),
-        invalid_file("test.css", 'Unsupported file type "text/css"'),
-        # Test unknown file type
-        invalid_file("test.html5", 'Unknown file type: ".html5".'),
-    ]
-
-
+@pytest.mark.django_db
 @pytest.mark.parametrize(
-    "file, raises, err_msg",
-    [*image_test_params(), valid_file("test.svg"), valid_file("test.SVG")],
-)
-def test_validate_image_or_svg(file: Mock, raises: bool, err_msg: str):
-    """
-    PNG, JPEG, and SVG all allowed.
-    """
-    if raises:
-        with pytest.raises(InvalidFileType, match=err_msg):
-            validate_image_or_svg(file)
-    else:
-        validate_image_or_svg(file)
-
-
-@pytest.mark.parametrize(
-    "file, raises, err_msg",
+    "file, raises, err_msg, valid_names, invalid_names",
     [
-        *image_test_params(),
-        invalid_file("test.svg", 'Unsupported file type "image/svg\\+xml"'),
-        invalid_file("test.SVG", 'Unsupported file type "image/svg\\+xml"'),
+        valid_file("test.svg", valid_names=[]),  # No valid list should always pass
+        valid_file("test.svg", valid_names=["SVG"]),
+        valid_file("test.SVG", valid_names=["SVG"]),  # Uppercase file extension should also pass
+        valid_file("test.svg", valid_names=["SVG", "TIFF"]),
+        invalid_file("test.html5", "The mimetype of file 'test.html5' could not be parsed"),
+        invalid_file("test.html", "The mimetype of file 'test.html' is currently not supported"),
+        invalid_file("test.svg", "The mimetype SVG is invalid", valid_names=["TIFF"]),
+        invalid_file("test.svg", "The mimetype SVG is invalid", valid_names=["SVG"], invalid_names=["SVG"]),
+        valid_file(
+            "test.svg",
+            # Unsupported mimetypes shouldn't have an effect on validation.
+            valid_names=["SVG", "FOOBAR"],
+            invalid_names=["BAZ"],
+        ),
+        invalid_file(
+            "test.svg",
+            "The mimetype SVG is invalid",
+            # Even though the mimetype isn't real, it's still the only valid one.
+            valid_names=["FOOBAR"],
+        ),
+        valid_file(
+            "test.svg",
+            # A fake invalid mimetype means we should pass
+            invalid_names=["FOOBAR"],
+        ),
     ],
 )
-def test_validate_image(file: Mock, raises: bool, err_msg: str):
+def test_validate_filetype(
+    file: Mock,
+    raises: bool,
+    err_msg: str,
+    valid_names: List[str],
+    invalid_names: List[str],
+):
     """
-    Should raise validation error when mimetype is not PNG, JPEG.
+    Test FiletypeValidator with human-readable mimetype names.
     """
+    validator = FiletypeValidator(valid_names=valid_names, invalid_names=invalid_names)
     if raises:
-        with pytest.raises(InvalidFileType, match=err_msg):
-            validate_image(file)
+        with pytest.raises(GuessedMimeType.BaseValidationError, match=err_msg):
+            validator(file)
     else:
-        validate_image(file)
+        # Shouldn't raise
+        validator(file)
 
 
 @pytest.mark.parametrize(
@@ -92,3 +104,33 @@ def test_validate_only_integers_and_whitespace(value: str, raises: bool):
             validate_only_integers_and_whitespace(value)
     else:
         validate_only_integers_and_whitespace(value)
+
+@pytest.mark.parametrize(
+    "value, raises",
+    [
+        (
+            "https://google.com",
+            True
+        ),
+        (
+            # http not allowed
+            "http://services6.arcgis.com/ubm4tcTYICKBpist/ArcGIS/rest/services/hpai_dashboard/FeatureServer/0",
+            True
+        ), 
+        (
+            "https://services6.arcgis.com/ubm4tcTYICKBpist/ArcGIS/rest/services/hpai_dashboard/FeatureServer/0",
+            False            
+        ),
+        (
+            "https://mapservices.crd.bc.ca/arcgis/rest/services/LandCoverAnalysis/MapServer/0",
+            True
+        ),
+    ],
+)
+
+def test_validate_arcgis_feature_server_link(value: str, raises: bool):
+    if raises:
+        with pytest.raises(ValidationError):
+            validate_arcgis_feature_server_link(value)
+    else:
+        validate_arcgis_feature_server_link(value)

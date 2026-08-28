@@ -20,7 +20,7 @@ ENV PATH="/root/.local/bin:$PATH"
 
 # Copy Python dependency manifests and install. The `--without os_specific` flag
 # skips the Python gdal installation which is already set up for us in the base image.
-COPY pyproject.toml poetry.toml poetry.lock ./
+COPY pyproject.toml poetry.toml ./
 RUN poetry lock && poetry install --without os_specific
 
 # Copy node dependency manifests and install.

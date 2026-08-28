@@ -5,7 +5,7 @@
 import { Point } from "leaflet";
 import { getStyleById } from "./graphql";
 import { getCentroid } from "./utils/math";
-import { expectEl } from "./utils/timing";
+import { expectEl, expectQuerySelector } from "./utils/timing";
 
 /**
  * Data used to draw the preview.
@@ -33,7 +33,23 @@ type PreviewState = {
     markerOptions: {
         data: string | null, // blob icon data
         bgColor: string,
-        opacity: number,
+        bgOpacity: number,
+        markerOpacity: number,
+        markerSize: number,
+    },
+    // Draw the leaflet circle
+    drawCircle: boolean,
+    circleOptions: {
+        radius: number,
+        strokeColor: string,
+        strokeWeight: number,
+        strokeOpacity: number,
+        strokeLineJoin: string,
+        strokeLineCap: string,
+        strokeDashOffset: string | null,
+        strokeDashArray: string | null,
+        fillColor: string,
+        fillOpacity: number,
     },
 };
 
@@ -41,11 +57,58 @@ type PreviewState = {
  * Declarative source for preview updates.
  */
 type UpdateSource = {
-    groupName: "Toggle" | "Stroke" | "Fill" | "Marker", // For collapsing and expanding admin field groups
+    groupName: "Toggle" | "Stroke" | "Fill" | "Marker" | "Circle", // For collapsing and expanding admin field groups
     eventName: "input" | "change", // For registering HTMLInputElement event listeners
     el: HTMLInputElement | null, // The element to listen to for updates
     update: (el: HTMLInputElement) => void, // A function that knows how to update the preview state based on the data from an HTMLInputElement.
 };
+
+/**
+ * Test whether a point lies inside a polygon using ray casting.
+ */
+function isPointInPolygon(point: Point, polygon: Array<Point>): boolean {
+    let inside = false;
+    const { x, y } = point;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+        const intersect = (yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+/**
+ * Return circle centers packed in a hexagonal grid inside the polygon.
+ * Uses the given display radius to control spacing; centres whose circle would
+ * stray outside the bounding box are still kept as long as the centre itself
+ * is inside the polygon (matching how Leaflet places circles regardless of
+ * viewport clipping).
+ * @param polygon the polygon to fill.
+ * @param displayRadius the SVG pixel radius of each circle.
+ */
+function getCirclePackingCenters(polygon: Array<Point>, displayRadius: number): Array<Point> {
+    if (displayRadius <= 0) return [];
+    const minX = Math.min(...polygon.map(p => p.x));
+    const maxX = Math.max(...polygon.map(p => p.x));
+    const minY = Math.min(...polygon.map(p => p.y));
+    const maxY = Math.max(...polygon.map(p => p.y));
+
+    const step = displayRadius * 2;                    // distance between circle centres
+    const rowHeight = step * (Math.sqrt(3) / 2);      // hexagonal row height
+    const centers: Array<Point> = [];
+    let row = 0;
+    for (let y = minY + displayRadius; y <= maxY - displayRadius + step; y += rowHeight, row++) {
+        const xOffset = (row % 2) * displayRadius;    // stagger alternate rows
+        for (let x = minX + displayRadius + xOffset; x <= maxX + step; x += step) {
+            const pt = new Point(x, y);
+            if (isPointInPolygon(pt, polygon)) {
+                centers.push(pt);
+            }
+        }
+    }
+    return centers;
+}
 
 /**
  * Build "points string" to use in SVG <polygon> element.
@@ -64,21 +127,21 @@ function getPointsAsString(points: Array<Point>): string{
  * @param state the style-preview state used to generate the HTML code.
  */
 function getPreviewHTML(state: PreviewState): string {
-    const svgWidth = 200;
-    const svgHeight = 150;
-    const markerRadius = 16; // target 32 diameter for the marker icon backround
-    const markerImageWidth = 26;
+    const svgWidth = 400;
+    const svgHeight = 400;
+    const markerImageWidth = state.markerOptions.markerSize;
+    const markerRadius = Math.sqrt(Math.pow(markerImageWidth / 2, 2) + Math.pow(markerImageWidth / 2, 2));
     const polygonPoints: Array<Point> = [
-        new Point(20, 20),
-        new Point(100, 40),
-        new Point(140, 80),
-        new Point(60, 120),
-        new Point(20, 80),
+        new Point(40, 40),
+        new Point(200, 80),
+        new Point(280, 160),
+        new Point(120, 240),
+        new Point(40, 160),
     ];
 
     // Declare SVG header and polygon with points
     let html = `
-    <svg 
+    <svg
         width="${svgWidth}px"
         height="${svgHeight}px"
         xmlns="http://www.w3.org/2000/svg"
@@ -115,18 +178,42 @@ function getPreviewHTML(state: PreviewState): string {
     const centroid = getCentroid(polygonPoints);
     if (state.drawMarker){
         // refX and Y should be HALF the width & height to center the image on the actual point
-        // orient="auto" → rotates the marker to match the path direction (default). orient="auto-start-reverse" → rotates to match start, reversed. orient="0" → fixed angle, no rotation.
         html += `
         <circle 
             id="marker-centroid"
             r="${markerRadius}px"
             fill=${state.markerOptions.bgColor}
-            opacity=${state.markerOptions.opacity}
+            opacity=${state.markerOptions.bgOpacity}
             cx=${centroid.x}
             cy=${centroid.y}
         />
         `
     }
+    // Pack leaflet circles inside the polygon.
+    // The admin radius (0–250 m) is mapped to a display radius (5–70 px) so that
+    // increasing the radius reduces the number of circles, mimicking real Leaflet rendering.
+    if (state.drawCircle){
+        const MIN_DISPLAY_R = 5;
+        const MAX_DISPLAY_R = 70;
+        const displayRadius = MIN_DISPLAY_R + (state.circleOptions.radius / 250) * (MAX_DISPLAY_R - MIN_DISPLAY_R);
+        const circleCenters = getCirclePackingCenters(polygonPoints, displayRadius);
+        const circleAttrs = `
+            r="${displayRadius}"
+            stroke="${state.circleOptions.strokeColor}"
+            stroke-width="${state.circleOptions.strokeWeight}"
+            stroke-opacity="${state.circleOptions.strokeOpacity}"
+            stroke-linecap="${state.circleOptions.strokeLineCap}"
+            stroke-linejoin="${state.circleOptions.strokeLineJoin}"
+            stroke-dasharray="${state.circleOptions.strokeDashArray}"
+            stroke-dashoffset="${state.circleOptions.strokeDashOffset}"
+            fill="${state.circleOptions.fillColor}"
+            fill-opacity="${state.circleOptions.fillOpacity}"
+        `;
+        for (const center of circleCenters) {
+            html += `<circle cx="${center.x}" cy="${center.y}" ${circleAttrs}/>`;
+        }
+    }
+
     html += '</svg>' // End of SVG
 
     // Add marker icon inside circle / background
@@ -141,12 +228,11 @@ function getPreviewHTML(state: PreviewState): string {
                 position: absolute;
                 left: ${centroid.x - markerImageWidth/2}px;
                 top: ${centroid.y - markerImageWidth/2}px;
-                opacity: ${state.markerOptions.opacity}
+                opacity: ${state.markerOptions.markerOpacity}
             '
         />'
         `
     }
-    //console.log("Drawing svg from preview state: ", html, state);
     return html
 }
 
@@ -224,17 +310,11 @@ export function readFile(file: File | Blob): Promise<string> {
 
 document.addEventListener('DOMContentLoaded', () => {(async () => {
 
-    const adminForm = document.querySelector('form');
-    if (adminForm) {
-        adminForm.addEventListener('submit', function () {
-            console.log('Form is being submitted!');  // You can also trigger a spinner, custom callback, etc.
-        });
-    }
-
     // Hooks into a preview box provided by the style admin class.
     const previewContainer = expectEl('style_preview') as HTMLDivElement;
     const styleId = expectEl("injected-style-id").innerHTML;
     const baseMediaUrl = expectEl("injected-media-url").innerHTML;
+    const stylePreview = expectQuerySelector(document, ".field-style_preview");
 
     // Define a default preview state (this is temporary because we will update the preview 
     // based on the admin form's currently selected style attributes on page load).
@@ -242,9 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {(async () => {
         drawStroke: false,
         drawFill: false,
         drawMarker: false,
+        drawCircle: false,
         strokeOptions: {color: "#FFFFFF", opacity: 1, weight: 1, lineJoin: "", lineCap: "ROUND", dashArray: "", dashOffset: "0"},
         fillOptions: {color: "#FFFFFF", opacity: 1},
-        markerOptions: {bgColor: "#FFFFFF", opacity: 1, data: null},
+        markerOptions: {bgColor: "#FFFFFF", bgOpacity: 1, data: null, markerOpacity: 1, markerSize: 22},
+        circleOptions: {radius: 50, strokeColor: "#3388FF", strokeWeight: 3, strokeOpacity: 1, strokeLineJoin: "", strokeLineCap: "ROUND", strokeDashArray: "", strokeDashOffset: "0"},
     };
 
     const sources:  Array<UpdateSource> = [
@@ -274,6 +356,15 @@ document.addEventListener('DOMContentLoaded', () => {(async () => {
             update: (el) => {
                 el.checked ? expandGroup("Marker", el, sources) : collapseGroup("Marker", el, sources);
                 previewState.drawMarker = el.checked;
+            },
+            eventName: "input",
+        },
+        {
+            groupName: "Toggle",
+            el: document.querySelector('#id_draw_circle'),
+            update: (el) => {
+                el.checked ? expandGroup("Circle", el, sources) : collapseGroup("Circle", el, sources);
+                previewState.drawCircle = el.checked;
             },
             eventName: "input",
         },
@@ -349,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {(async () => {
 
                 // Check to see if a new file has been selected
                 let file = null;
-                console.log(el.files);
                 if (el.files){
                     file = el.files[0];
                 }
@@ -363,13 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {(async () => {
                     // I wanted something that didn't rely on Django's file input's "Currently" section 
                     // link (see the field row in the admin site), which doesn't appear with an ID in the
                     // DOM. This way, I can be sure that the image data (if it exists) is being accessed.
-                    console.log("Getting old marker icon data from injected style id: ", styleId);
                     if (styleId !== ""){ 
                         const style = await getStyleById(styleId);
                         if (style !== null){
                             const url = baseMediaUrl + style.markerIcon;
                             const response = await fetch(url);
-                            console.log(response, url);
                             const blob = await response.blob();
                             const markerData = await readFile(blob);
                             previewState.markerOptions.data = markerData;
@@ -387,13 +475,90 @@ document.addEventListener('DOMContentLoaded', () => {(async () => {
         {
             groupName: "Marker",
             el: document.querySelector('#id_marker_icon_opacity'),
-            update: (el) => previewState.markerOptions.opacity = Number(el.value),
+            update: (el) => previewState.markerOptions.markerOpacity = Number(el.value),
             eventName: "input",
         },
         {
             groupName: "Marker",
             el: document.querySelector('#id_marker_background_color'),
             update: (el) => previewState.markerOptions.bgColor = el.value,
+            eventName: "input",
+        },
+        {
+            groupName: "Marker",
+            el: document.querySelector('#id_marker_background_opacity'),
+            update: (el) => previewState.markerOptions.bgOpacity = Number(el.value),
+            eventName: "input",
+        },
+        {
+            groupName: "Marker",
+            el: document.querySelector('#id_marker_size'),
+            update: (el) => {
+                previewState.markerOptions.markerSize = Number(el.value);
+
+            },
+            eventName: "input",
+        },
+
+        // Circle fields
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_stroke_color'),
+            update: (el) => previewState.circleOptions.strokeColor = el.value,
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_radius'),
+            update: (el) => previewState.circleOptions.radius = Number(el.value),
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_stroke_weight'),
+            update: (el) => previewState.circleOptions.strokeWeight = Number(el.value),
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_stroke_opacity'),
+            update: (el) => previewState.circleOptions.strokeOpacity = Number(el.value),
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_stroke_line_cap'),
+            update: (el) => previewState.circleOptions.strokeLineCap = el.value,
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_stroke_line_join'),
+            update: (el) => previewState.circleOptions.strokeLineJoin = el.value,
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_stroke_dash_array'),
+            update: (el) => previewState.circleOptions.strokeDashArray = el.value,
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_stroke_dash_offset'),
+            update: (el) => previewState.circleOptions.strokeDashOffset = el.value,
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_fill_color'),
+            update: (el) => previewState.circleOptions.fillColor = el.value,
+            eventName: "input",
+        },
+        {
+            groupName: "Circle",
+            el: document.querySelector('#id_circle_fill_opacity'),
+            update: (el) => previewState.circleOptions.fillOpacity = Number(el.value),
             eventName: "input",
         },
     ];
@@ -411,73 +576,3 @@ document.addEventListener('DOMContentLoaded', () => {(async () => {
     }
     
 })();});
-
-
-    // let styleOptions = {
-    //     drawFill: document.querySelector('#id_draw_fill') as HTMLInputElement,
-    //     drawMarker: document.querySelector('#id_draw_marker') as HTMLInputElement,
-    //     drawStroke: document.querySelector('#id_draw_stroke') as HTMLInputElement,
-    //     stroke: {
-    //         color: document.querySelector('#id_stroke_color'),
-    //         weight: document.querySelector('#id_stroke_weight'),
-    //         opacity: document.querySelector('#id_stroke_opacity'),
-    //         lineCap: document.querySelector('#id_stroke_line_cap'),
-    //         lineJoin: document.querySelector('#id_stroke_line_join'),
-    //         dashArray: document.querySelector('#id_stroke_dash_array'),
-    //         dashOffset: document.querySelector('#id_stroke_dash_offset'),
-    //     },
-    //     fill: {
-    //         color: document.querySelector('#id_fill_color'),
-    //         opacity: document.querySelector('#id_fill_opacity'),
-    //     },
-    //     marker: {
-    //         icon: document.querySelector('#live_image_input_marker_icon'),
-    //         opacity: document.querySelector('#id_marker_icon_opacity'),
-    //         backgroundColor: document.querySelector("#id_marker_background_color")
-    //     },
-    // };
-
-    // const allOptionsAndToggles = [
-    //     styleOptions.drawStroke, ...Object.values(styleOptions.stroke),
-    //     styleOptions.drawFill, ...Object.values(styleOptions.fill),
-    //     styleOptions.drawMarker, ...Object.values(styleOptions.drawMarker),
-    // ];
-    // for (let element of allOptionsAndToggles){
-    //     if (element === null){
-    //         console.log(allOptionsAndToggles);
-    //         throw new Error("Missing element!");
-    //     }
-    // }
-
-    
-
-    // // Add event-listeners for redrawing the style preview.
-    // for (let element of allOptionsAndToggles){
-    //     const input = element as HTMLInputElement;
-    //     input.addEventListener('input', () => updatePreview(previewContainer, styleOptions, null));
-    //     input.addEventListener('input', () => collapseAndExpandOptionGroups(styleOptions));
-    // }
-
-    // // Add event listeners for collapsing and expanding options groups
-    // styleOptions.drawStroke.addEventListener("change", () => collapseAndExpandOptionGroups(styleOptions));
-
-    // // Draw initial style preview on page-load.
-    // collapseAndExpandOptionGroups(styleOptions);
-    // updatePreview(previewContainer, styleOptions, null);
-
-    // if (styleOptions.marker.icon !== null){
-    //     styleOptions.marker.icon.addEventListener('change', (event) => {
-    //         const file = event.target.files[0];
-    //         if (file) {
-    //             const reader = new FileReader();
-    //             reader.onload = function(e) {
-    //                 console.log(e.target.result?.toString());
-    //                 // previewEl.src = e.target.result;
-    //                 // previewEl.style.display = 'block';
-    //                 //styleOptions.marker.rawData = e.target.result;
-    //                 updatePreview(previewContainer, styleOptions, e.target.result);
-    //             }
-    //             reader.readAsDataURL(file);
-    //         }
-    //     });
-    // }

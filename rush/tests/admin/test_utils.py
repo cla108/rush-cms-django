@@ -62,11 +62,11 @@ class TestSliderAndTextboxNumberInput:
         # The html should contain the correct values
         assert f'data-fieldname="{name}"' in result
         assert (
-            f'<input type="range" name="{name}" value="{value}" min="{min}" max="{max}" step="{step}" id="slider_{name}">'
+            f'<input type="range" name="{name}" value="{round(Decimal(value), 2)}" min="{min}" max="{max}" step="{step}" id="slider_{name}">'
             in result
         )
         assert (
-            f'<input type="number" name="{name}" value="{value}" min="{min}" max="{max}" step="{step}" id="id_{name}">'
+            f'<input type="number" name="{name}" value="{round(Decimal(value), 2)}" min="{min}" max="{max}" step="{step}" id="id_{name}">'
             in result
         )
 

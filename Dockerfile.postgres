@@ -1,3 +1,0 @@
-FROM postgis/postgis
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["postgres"]

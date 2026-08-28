@@ -1,0 +1,38 @@
+/*
+ * This file contains CSS to make the spinner that covers the layer preview on the admin site work correctly.
+ */
+
+.spinner {
+  position: absolute;
+  left: 68%;
+  transform: translate(-50%, -50%) translateY(-300px);
+  border: 8px solid #ccc;
+  border-top: 8px solid #333;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  z-index: 1000;
+}
+@keyframes spin {
+  /* 
+   * Using top or margin-top to move the elment up moves the elements below the spinner in the dom, 
+   * which is noticable when the spinner is added and removed quickly... instead we can use translateY!
+   */
+  from {
+    transform: translate(-50%, -50%) translateY(-300px) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) translateY(-300px) rotate(360deg);
+  }
+}
+.hidden {
+  display: none;
+}
+.blur {
+  /* Blur effect for layer preview */
+  filter: blur(10px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 1;
+}

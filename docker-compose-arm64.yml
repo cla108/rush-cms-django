@@ -1,0 +1,10 @@
+# An alternate compose file for people on ARM64 architectures to use, e.g., Apple M3 Chips.
+
+services:
+
+  django:
+    environment:
+      - GDAL_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/libgdal.so.38
+
+  postgres:
+    platform: linux/amd64

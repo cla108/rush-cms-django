@@ -9,8 +9,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const fieldname = imageEl.id.split("live_image_input_")[1];
         const previewEl = document.getElementById('live_image_preview_' + fieldname);
 
-        console.log(imageEl);
-
         const refreshPreview = (event) => {
 
         };

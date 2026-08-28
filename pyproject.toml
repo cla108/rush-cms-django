@@ -13,7 +13,6 @@ django = "^5.1.7"
 psycopg = {extras = ["binary"], version = "^3.2.6"}
 django-summernote = "^0.8.20.0"
 graphene-django = "^3.2.3"
-django-simple-history = "^3.8.0"
 pillow = "^11.1.0"
 django-leaflet = "^0.31.0"
 python-decouple = "^3.8"
@@ -22,14 +21,34 @@ requests = "^2.32.3"
 jinja2 = "^3.1.6"
 gunicorn = "^23.0.0"
 dj-database-url = "^3.0.1"
+django-ratelimit = "4.1.0"
 django-cors-headers = "^4.9.0"
+django-storages = "^1.14.6"
+boto3 = "^1.40.52"
+django-admin-sortable2 = "^2.2.8"
+django-nested-admin = "^4.1.5"
+django-logentry-admin = "^1.1.0"
+django-silk = "^5.4.3"
+django-redis = "^6.0.0"
+bleach = "^6.3.0"
+tinycss2 = "^1.4.0"
+django-admin-logs = "^1.4.0"
+beautifulsoup4 = "^4.14.2"
+matplotlib = "^3.10.8"
+numpy = "1.26.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
 pytest-django = "^4.11.1"
+coverage = "^7.13.4"
 
 [tool.poetry.group.os_specific.dependencies]
-gdal = "3.8.4"
+gdal = [
+    {version = "3.4.1", markers = "sys_platform == 'linux' and platform_release < '6.0'"},  # Ubuntu 22.04
+    {version = "3.8.4", markers = "sys_platform == 'linux' and platform_release >= '6.0'"}, # Ubuntu 24.04
+    {version = "3.8.4", markers = "sys_platform == 'darwin'"},  # MacOS
+    {version = "^3.9", markers = "sys_platform == 'win32'"},  # Windows
+]
 
 [build-system]
 requires = ["poetry-core"]

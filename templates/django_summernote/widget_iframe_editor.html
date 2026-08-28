@@ -1,0 +1,32 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html style="font-size: 18px"></htmlstyle>
+    <head>
+        <title>django-summernote frame</title>
+        {% for url in css %}
+        <link href="{{ url }}" rel="stylesheet">{% endfor %}
+        {% for url in js %}
+        <script src="{{ url }}"></script>{% endfor %}
+        <style>
+            html, body {
+                margin: 0;
+            }
+            .note-editor {
+                margin-bottom: 0;
+            }
+        </style>
+        <link href="{% static 'css/rush.css' %}" rel="stylesheet">
+        <link href="{% static 'css/fonts.css' %}" rel="stylesheet">
+    </head>
+    <body>
+        <div id="summernote"></div>
+        {% include "django_summernote/widget_common.html" with iframe=True %}
+        <script>
+            $(document).ready(function() {
+                initSummernote_{{ id_safe }}({});
+            });
+        </script>
+    </body>
+</html>
+

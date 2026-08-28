@@ -34,5 +34,11 @@ export default defineConfig({
     test: {
       environment: 'jsdom', // adds simulated browser calls, i.e., window, document, etc. to the test environment
       globals: true,
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'text-summary'],
+        reportsDirectory: './coverage',
+        exclude: ['node_modules/', 'test/'],
+      },
     },
 })

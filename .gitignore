@@ -1,9 +1,14 @@
 SAM*.md
 /.django_dev*
+docker-compose.override.yml
 node_modules/
 backups/
 logs/*
-
+poetry.lock
+.dev-collected-staticfiles/*
+.dev-mediafiles/*
+.claude/*
+.vscode/*
 
 ####
 # Auto-generated gitignore for python below...

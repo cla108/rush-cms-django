@@ -4,13 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.django
-      # args:
-      #   # For calling django makemigrations and migrate during the build stage (.env and environment are not injected by Docker until container runtime).
-      #   DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
-      #   DJANGO_DEBUG: ${DJANGO_DEBUG}
     image: rush_admin/django
     volumes:
-      - .:/app
+      - .:/rush_admin                                         # bind mount for live reload
+      - venv:/rush_admin/.venv                               # preserve venv from image
+      - frontend_node_modules:/rush_admin/frontend/node_modules  # preserve node_modules from image
     depends_on:
       - postgres
     env_file:
@@ -22,15 +20,21 @@ services:
       sh -c "poetry run python manage.py makemigrations &&
             poetry run python manage.py migrate &&
             poetry run python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
 
   postgres:
-    build:
-      context: .
-      dockerfile: Dockerfile.postgres
-    image: rush_admin/postgres
+    image: postgis/postgis:18-3.6
     environment:
       - POSTGRES_DB=${POSTGRES_DATABASE_NAME}
       - POSTGRES_USER=${POSTGRES_DATABASE_USERNAME}
       - POSTGRES_PASSWORD=${POSTGRES_DATABASE_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql
     ports:
       - "5432:5432"
+
+volumes:
+  venv:
+  frontend_node_modules:
+  pgdata:

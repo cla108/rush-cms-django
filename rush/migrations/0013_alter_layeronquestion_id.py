@@ -3,7 +3,6 @@
 from django.db import migrations
 
 from rush.migration_helpers import big_int_to_uuid_operations
-from rush.models.layer.layer_on_question import LayerOnQuestion
 
 
 class Migration(migrations.Migration):
@@ -13,5 +12,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        *big_int_to_uuid_operations(LayerOnQuestion, "id"),
+        *big_int_to_uuid_operations("layeronquestion", "id"),
     ]

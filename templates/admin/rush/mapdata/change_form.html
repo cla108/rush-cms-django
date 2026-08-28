@@ -16,7 +16,7 @@
         };
 
         /**
-         * Move the element 'elToMove' directly below 'referenceEl' in the DOM.
+         * Move the element 'elToMove' directly above 'referenceEl' in the DOM.
          */
         const moveAbove = (referenceEl, elToMove) => {
             referenceEl.parentNode.insertBefore(elToMove, referenceEl.previousSibling);
@@ -26,7 +26,6 @@
 
             // Parse the MapDataAdminFormConfig object to JS
             const config = JSON.parse("{{ map_data_admin_form_config|escapejs }}");
-            console.log(config);
 
             // Get constant elements
             const providerStateInputEl = document.getElementById("id_provider_state");
@@ -50,6 +49,8 @@
                 map.fitBounds(geoJsonLayer.getBounds());
             }
 
+            // ARCGIS REST TODO: 
+
             // Monitor for live changes
             const geojsonInput = document.getElementById("id__geojson");
             const reDrawMapPreview = () => {
@@ -71,7 +72,6 @@
                     // if (errorList === null){
                     //     geojsonInput.insertBefore("<div class='errorlist'>" + e + "</div>")
                     // }
-                    // console.log(errorList);
                 }
             };
             geojsonInput.addEventListener('input', reDrawMapPreview);
