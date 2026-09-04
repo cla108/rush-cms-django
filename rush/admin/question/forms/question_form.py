@@ -19,7 +19,7 @@ class QuestionForm(ModelForm):
             "sash",
             "initiatives",
             "region",
-            "published_state",
+            "channels",
         ]
 
     def __init__(self, *args, **kwargs):

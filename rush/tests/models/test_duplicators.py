@@ -2,11 +2,11 @@ from pytest import mark, raises
 
 from rush.models import (
     BasemapSourceOnQuestion,
+    Channel,
     Initiative,
     Layer,
     LayerGroupOnQuestion,
     LayerOnLayerGroup,
-    PublishedState,
     Question,
     QuestionTab,
     Style,
@@ -31,12 +31,12 @@ from rush.tests.models.helpers import (
 #######################
 
 
-def _duplicate_question() -> tuple[Question, Question]:
+def _duplicate_question(**kwargs) -> tuple[Question, Question]:
     """
     Create a test question instance, and a duplicate version of it.
     """
     assert Question.objects.count() == 0
-    instance = create_test_question()
+    instance = create_test_question(**kwargs)
     assert Question.objects.count() == 1
     duplicate = QuestionDuplicator(instance).duplicate()
     assert Question.objects.count() == 2
@@ -60,14 +60,14 @@ def test_question_duplicator_copies_non_unique_primitive_fields_by_value():
 
 
 @mark.django_db
-def test_question_duplicator_sets_published_state_to_draft():
+def test_question_duplicator_tags_the_duplicate_onto_the_draft_channel():
     """
-    The question duplicator should always set the published state to draft so that clients don't see
-    duplicate data on the frontend.
+    The question duplicator should always tag the duplicate onto the draft channel (and nothing else)
+    so that clients don't see duplicate data on the frontend.
     """
-    instance, duplicate = _duplicate_question()
-    assert instance.published_state == PublishedState.PUBLISHED
-    assert duplicate.published_state == PublishedState.DRAFT
+    instance, duplicate = _duplicate_question(channels=[Channel.objects.published()])
+    assert [channel.name for channel in instance.channels.all()] == [Channel.PUBLISHED_NAME]
+    assert [channel.name for channel in duplicate.channels.all()] == [Channel.DRAFT_NAME]
 
 
 @mark.django_db
@@ -387,12 +387,12 @@ def test_question_duplicator_copies_layer_group_on_question_data_by_value():
 #########################
 
 
-def _duplicate_initiative() -> tuple[Initiative, Initiative]:
+def _duplicate_initiative(**kwargs) -> tuple[Initiative, Initiative]:
     """
     Create a test initiative instance, and a duplicate version of it.
     """
     assert Initiative.objects.count() == 0
-    instance = create_test_initiative()
+    instance = create_test_initiative(**kwargs)
     assert Initiative.objects.count() == 1
     duplicate = InitiativeDuplicator(instance).duplicate()
     assert Initiative.objects.count() == 2
@@ -414,14 +414,14 @@ def test_initiative_duplicator_copies_non_unique_primitive_fields_by_value():
 
 
 @mark.django_db
-def test_initiative_duplicator_sets_published_state_to_draft():
+def test_initiative_duplicator_tags_the_duplicate_onto_the_draft_channel():
     """
-    The initiative duplicator should always set the published state to draft so that clients don't see
-    duplicate data on the frontend.
+    The initiative duplicator should always tag the duplicate onto the draft channel (and nothing else)
+    so that clients don't see duplicate data on the frontend.
     """
-    instance, duplicate = _duplicate_initiative()
-    assert instance.published_state == PublishedState.PUBLISHED
-    assert duplicate.published_state == PublishedState.DRAFT
+    instance, duplicate = _duplicate_initiative(channels=[Channel.objects.published()])
+    assert [channel.name for channel in instance.channels.all()] == [Channel.PUBLISHED_NAME]
+    assert [channel.name for channel in duplicate.channels.all()] == [Channel.DRAFT_NAME]
 
 
 @mark.django_db
@@ -463,12 +463,12 @@ def test_initiative_duplicator_copies_initiative_tags_by_reference():
 ####################
 
 
-def _duplicate_layer() -> tuple[Layer, Layer]:
+def _duplicate_layer(**kwargs) -> tuple[Layer, Layer]:
     """
     Create a test layer instance, and a duplicate version of it.
     """
     assert Layer.objects.count() == 0
-    instance = create_test_layer()
+    instance = create_test_layer(**kwargs)
     assert Layer.objects.count() == 1
     duplicate = LayerDuplicator(instance).duplicate()
     assert Layer.objects.count() == 2
@@ -490,14 +490,14 @@ def test_layer_duplicator_copies_non_unique_primitive_fields_by_value():
 
 
 @mark.django_db
-def test_layer_duplicator_sets_published_state_to_draft():
+def test_layer_duplicator_tags_the_duplicate_onto_the_draft_channel():
     """
-    The layer duplicator should always set the published state to draft so that clients don't see
-    duplicate data on the frontend.
+    The layer duplicator should always tag the duplicate onto the draft channel (and nothing else)
+    so that clients don't see duplicate data on the frontend.
     """
-    instance, duplicate = _duplicate_layer()
-    assert instance.published_state == PublishedState.PUBLISHED
-    assert duplicate.published_state == PublishedState.DRAFT
+    instance, duplicate = _duplicate_layer(channels=[Channel.objects.published()])
+    assert [channel.name for channel in instance.channels.all()] == [Channel.PUBLISHED_NAME]
+    assert [channel.name for channel in duplicate.channels.all()] == [Channel.DRAFT_NAME]
 
 
 @mark.django_db

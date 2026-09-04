@@ -17,7 +17,7 @@ class InitiativeForm(ModelForm):
             "content",
             "content_strict_clean",
             "tags",
-            "published_state",
+            "channels",
         ]
 
     def __init__(self, *args, **kwargs):

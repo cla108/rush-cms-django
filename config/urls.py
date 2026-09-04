@@ -3,9 +3,10 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.decorators.csrf import csrf_exempt
+from graphene_django.views import GraphQLView
 
 from rush import views
-from rush.graphql import PublishedStateGraphQLView, get_schema
+from rush.graphql import get_schema
 
 urlpatterns = [
     path("login/", views.rush_login_view),
@@ -14,7 +15,7 @@ urlpatterns = [
     path(
         # TODO: Remove csrf exempt here and add the token to internal graphQL requests!
         "graphql/",
-        csrf_exempt(PublishedStateGraphQLView.as_view(graphiql=True, schema=get_schema())),
+        csrf_exempt(GraphQLView.as_view(graphiql=True, schema=get_schema())),
     ),
 ]
 

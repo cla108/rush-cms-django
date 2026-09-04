@@ -257,6 +257,10 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 CSRF_TRUSTED_ORIGINS = [x for x in str(config("DJANGO_CSRF_TRUSTED_ORIGINS", cast=str)).split(",") if x != ""]
 X_FRAME_OPTIONS = "SAMEORIGIN"  # Need cross-origin here for Summernote X-frame injection
 
+# The public website that serves content from this CMS. Used by the admin-site to build
+# channel preview links, e.g., "https://whatstherush.earth/?channel=published".
+FRONTEND_BASE_URL = str(config("DJANGO_FRONTEND_BASE_URL", cast=str, default="")).rstrip("/")
+
 
 # Backblaze configuration for raster images
 BACKBLAZE_RASTER_BUCKET_NAME = "rush-webmap-raster"

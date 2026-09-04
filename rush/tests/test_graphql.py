@@ -1,25 +1,70 @@
-from pytest import mark
+from types import SimpleNamespace
 
-from rush.graphql import PublishedStateGraphQLView, convert_relative_links_to_absolute
-from rush.models import PublishedState
+from graphql import GraphQLError
+from pytest import mark, raises
+
+from rush.graphql import (
+    convert_relative_links_to_absolute,
+    request_channels,
+    scope_request_to_channels,
+)
+from rush.models import Channel
 
 
+def _fake_info() -> SimpleNamespace:
+    """
+    Stand-in for the graphene ResolveInfo, which only needs to carry a request context here.
+    """
+    return SimpleNamespace(context=SimpleNamespace())
+
+
+@mark.django_db
 @mark.parametrize(
-    "params, expected",
+    "channels_arg, expected",
     [
-        # PUBLISHED is the default query visibility when unspecified
-        (None, [PublishedState.PUBLISHED]),
-        ({}, [PublishedState.PUBLISHED]),
-        ({"visibility": "foobar"}, [PublishedState.PUBLISHED]),
-        ({"foo": "barbaz"}, [PublishedState.PUBLISHED]),
-        # the published-state returned corresponds to the visibility param, when it matches a published-state value
-        ({"visibility": "published"}, [PublishedState.PUBLISHED]),
-        ({"visibility": "draft"}, [PublishedState.DRAFT]),
-        ({"visibility": "all"}, [PublishedState.PUBLISHED, PublishedState.DRAFT]),
+        # the published channel is served when a request doesn't name any
+        (None, [Channel.DEFAULT_VIEW_CHANNEL]),
+        ([], [Channel.DEFAULT_VIEW_CHANNEL]),
+        # otherwise the named channels are served, in the order they were asked for
+        ([Channel.DRAFT_NAME], [Channel.DRAFT_NAME]),
+        ([Channel.PUBLISHED_NAME], [Channel.PUBLISHED_NAME]),
+        # several channels can be unioned in one request
+        (
+            [Channel.PUBLISHED_NAME, Channel.DRAFT_NAME],
+            [Channel.PUBLISHED_NAME, Channel.DRAFT_NAME],
+        ),
+        # repeats collapse
+        (
+            [Channel.DRAFT_NAME, Channel.PUBLISHED_NAME, Channel.DRAFT_NAME],
+            [Channel.DRAFT_NAME, Channel.PUBLISHED_NAME],
+        ),
     ],
 )
-def test_get_published_state_from_request_params(params: dict | None, expected: PublishedState):
-    assert PublishedStateGraphQLView.get_published_state_from_request_params(params) == expected
+def test_scope_request_to_channels(channels_arg: list[str] | None, expected: list[str]):
+    info = _fake_info()
+    assert [channel.name for channel in scope_request_to_channels(info, channels_arg)] == expected
+    # nested resolvers must filter by the same channels as the root query they were reached through
+    assert [channel.name for channel in request_channels(info)] == expected
+
+
+@mark.django_db
+@mark.parametrize(
+    "channels_arg, expected_message",
+    [
+        (["not-a-channel"], "Unknown channel(s): 'not-a-channel'."),
+        # a request fails if any one of the named channels is unknown
+        ([Channel.PUBLISHED_NAME, "not-a-channel"], "Unknown channel(s): 'not-a-channel'."),
+        (["nope", "nada"], "Unknown channel(s): 'nope', 'nada'."),
+    ],
+)
+def test_scope_request_to_unknown_channels_fails(channels_arg: list[str], expected_message: str):
+    with raises(GraphQLError, match=expected_message.replace("(", r"\(").replace(")", r"\)")):
+        scope_request_to_channels(_fake_info(), channels_arg)
+
+
+@mark.django_db
+def test_request_channels_defaults_when_no_root_query_scoped_them():
+    assert [channel.name for channel in request_channels(_fake_info())] == [Channel.DEFAULT_VIEW_CHANNEL]
 
 
 def _relative_to_absolute_link_params(tag: str, key: str, closing=True) -> list[tuple[str, str]]:

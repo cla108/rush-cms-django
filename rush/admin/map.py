@@ -13,8 +13,13 @@ from silk.profiling.dynamic import silk_profile
 
 from rush import models
 from rush.admin import utils
-from rush.admin.filters import PublishedStateFilter
-from rush.admin.utils import SuperuserStrictCleanMixin, truncate_admin_text_from
+from rush.admin.filters import ChannelFilter
+from rush.admin.utils import (
+    DefaultChannelMixin,
+    channel_links_html,
+    SuperuserStrictCleanMixin,
+    truncate_admin_text_from,
+)
 from rush.admin.widgets import SummernoteWidget
 from rush.models.duplicators import LayerDuplicator
 from rush.models.style.tooltip import Direction
@@ -275,14 +280,19 @@ class LayerForm(forms.ModelForm):
 
 
 @admin.register(models.Layer)
-class LayerAdmin(SuperuserStrictCleanMixin, sortable_admin.SortableAdminBase, admin.ModelAdmin):  # type: ignore
+class LayerAdmin(  # type: ignore
+    DefaultChannelMixin,
+    SuperuserStrictCleanMixin,
+    sortable_admin.SortableAdminBase,
+    admin.ModelAdmin,
+):
     form = LayerForm
     inlines = [StyleOnLayerInline]
-    autocomplete_fields = ["map_data"]
+    autocomplete_fields = ["map_data", "channels"]
     search_fields = ["name"]
-    list_display = ["name", "description_preview", "site_visibility"]
+    list_display = ["name", "description_preview", "channels_preview"]
     description_preview = truncate_admin_text_from("description")
-    list_filter = [PublishedStateFilter]
+    list_filter = [ChannelFilter]
     actions = ["duplicate_object"]
 
     @admin.action(description="Duplicate selected items")
@@ -290,16 +300,20 @@ class LayerAdmin(SuperuserStrictCleanMixin, sortable_admin.SortableAdminBase, ad
         for obj in queryset:
             LayerDuplicator(obj).duplicate()
         self.message_user(request, f"Successfully duplicated {queryset.count()} item(s).")
-        return HttpResponseRedirect("?published_state=all")
+        return HttpResponseRedirect("?channel=all")
 
-    @admin.display(description="Site Visibility")
-    def site_visibility(self, obj):
-        return obj.published_state
+    @admin.display(description="Channels")
+    def channels_preview(self, obj):
+        return channel_links_html(obj.channels.all())
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         # Defer expensive fields when listing Layers
-        return qs.select_related("map_data").defer("serialized_leaflet_json", "map_data___geojson")
+        return (
+            qs.select_related("map_data")
+            .prefetch_related("channels")
+            .defer("serialized_leaflet_json", "map_data___geojson")
+        )
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         """Handles both GET (load form) and POST (save form) requests"""
