@@ -2,7 +2,6 @@
 Drop the unused Channel.is_private flag.
 """
 
-
 from django.db import migrations
 
 
