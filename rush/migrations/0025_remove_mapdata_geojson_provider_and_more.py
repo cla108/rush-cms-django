@@ -27,7 +27,9 @@ def reverse_migrate_provider_state_to_provider(apps, schema_editor):
     MapData = apps.get_model("rush", "MapData")
     for map_data in MapData.objects.all():
         provider_state = map_data.provider_state
-        print(f"Migrating in reverse <MapData {map_data.id}> provider_state field to provider...")
+        print(
+            f"Migrating in reverse <MapData {map_data.id}> provider_state field to provider..."
+        )
         map_data.provider = (
             provider_state if provider_state != "unset" else "geojson"
         )  # HACK: Just set anything no set to GeoJson for reverse migration...

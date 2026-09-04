@@ -15,7 +15,10 @@ from rush.tests.models.helpers import FakeFile
         # Empty <p> preserved — blank line in editor
         ("<p></p>", "<p></p>"),
         # <p> Summernote styles and classes kept as-is
-        ('<p class="foo" style="color:red">text</p>', '<p class="foo" style="color:red">text</p>'),
+        (
+            '<p class="foo" style="color:red">text</p>',
+            '<p class="foo" style="color:red">text</p>',
+        ),
         # <div> with text becomes <p>, div attributes stripped
         ('<div class="foo">Some text</div>', "<p>Some text</p>"),
         # Empty <div> removed entirely
@@ -37,14 +40,23 @@ from rush.tests.models.helpers import FakeFile
         # Deeply nested <p> extracted by successive unwrapping
         ("<div><div><div><p>deep</p></div></div></div>", "<p>deep</p>"),
         # Lists preserved as-is
-        ("<ul><li>item 1</li><li>item 2</li></ul>", "<ul><li>item 1</li><li>item 2</li></ul>"),
-        ("<ol><li>first</li><li>second</li></ol>", "<ol><li>first</li><li>second</li></ol>"),
+        (
+            "<ul><li>item 1</li><li>item 2</li></ul>",
+            "<ul><li>item 1</li><li>item 2</li></ul>",
+        ),
+        (
+            "<ol><li>first</li><li>second</li></ol>",
+            "<ol><li>first</li><li>second</li></ol>",
+        ),
         # <div> wrapping a list is unwrapped
         ("<div><ul><li>item</li></ul></div>", "<ul><li>item</li></ul>"),
         # <img> preserved with attributes
         ('<img src="foo.png" alt="bar"/>', '<img alt="bar" src="foo.png"/>'),
         # <img> inside <p> preserved
-        ('<p><img src="foo.png" alt="bar"/></p>', '<p><img alt="bar" src="foo.png"/></p>'),
+        (
+            '<p><img src="foo.png" alt="bar"/></p>',
+            '<p><img alt="bar" src="foo.png"/></p>',
+        ),
         # <div> wrapping only an <img> becomes <p> (not dropped)
         ('<div><img src="foo.png"/></div>', '<p><img src="foo.png"/></p>'),
         # Empty string returned as-is

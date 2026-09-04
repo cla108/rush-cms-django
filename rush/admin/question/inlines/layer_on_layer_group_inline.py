@@ -21,7 +21,9 @@ class LayerOnLayerGroupInline(SortableHiddenMixin, NestedTabularInline):
         if "layer" in formset.form.base_fields:
             # Modify the layer field queryset to defer heavy fields. This can't be done in QuestionAdmin
             # because the nested-inline-admin does a lot of dynamic formset/queryset creation on the fly.
-            formset.form.base_fields["layer"].queryset = Layer.objects.select_related("map_data").defer(
+            formset.form.base_fields["layer"].queryset = Layer.objects.select_related(
+                "map_data"
+            ).defer(
                 "serialized_leaflet_json",
                 "map_data___geojson",
                 "map_data__geotiff",

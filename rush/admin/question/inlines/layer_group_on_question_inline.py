@@ -40,7 +40,9 @@ class LayerGroupOnQuestionInlineForm(ModelForm):
         }
 
 
-class LayerGroupOnQuestionInline(SuperuserStrictCleanMixin, SortableHiddenMixin, NestedTabularInline):
+class LayerGroupOnQuestionInline(
+    SuperuserStrictCleanMixin, SortableHiddenMixin, NestedTabularInline
+):
     """
     An inline group of layers that are assigned to a question.
     """
@@ -66,7 +68,9 @@ class LayerGroupOnQuestionInline(SuperuserStrictCleanMixin, SortableHiddenMixin,
         return qs.prefetch_related(
             Prefetch(
                 "layers",  # This is the related_name from LayerOnLayerGroup
-                queryset=LayerOnLayerGroup.objects.select_related("layer__map_data").defer(
+                queryset=LayerOnLayerGroup.objects.select_related(
+                    "layer__map_data"
+                ).defer(
                     "layer__serialized_leaflet_json",
                     "layer__map_data___geojson",
                     "layer__map_data__geotiff",
@@ -88,7 +92,5 @@ class LayerGroupOnQuestionInline(SuperuserStrictCleanMixin, SortableHiddenMixin,
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == "group_description":
-            formfield.initial = (
-                '<p class="rush-subtitle"><span style="font-size: 10px;">Example group title</span></p>'
-            )
+            formfield.initial = '<p class="rush-subtitle"><span style="font-size: 10px;">Example group title</span></p>'
         return formfield

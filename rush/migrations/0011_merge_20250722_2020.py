@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0007_alter_historicallayer_serialized_leaflet_json_and_more'),
-        ('rush', '0010_remove_page_url_route'),
+        ("rush", "0007_alter_historicallayer_serialized_leaflet_json_and_more"),
+        ("rush", "0010_remove_page_url_route"),
     ]
 
-    operations = [
-    ]
+    operations = []

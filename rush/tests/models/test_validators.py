@@ -35,12 +35,23 @@ def invalid_file(
     [
         valid_file("test.svg", valid_names=[]),  # No valid list should always pass
         valid_file("test.svg", valid_names=["SVG"]),
-        valid_file("test.SVG", valid_names=["SVG"]),  # Uppercase file extension should also pass
+        valid_file(
+            "test.SVG", valid_names=["SVG"]
+        ),  # Uppercase file extension should also pass
         valid_file("test.svg", valid_names=["SVG", "TIFF"]),
-        invalid_file("test.html5", "The mimetype of file 'test.html5' could not be parsed"),
-        invalid_file("test.html", "The mimetype of file 'test.html' is currently not supported"),
+        invalid_file(
+            "test.html5", "The mimetype of file 'test.html5' could not be parsed"
+        ),
+        invalid_file(
+            "test.html", "The mimetype of file 'test.html' is currently not supported"
+        ),
         invalid_file("test.svg", "The mimetype SVG is invalid", valid_names=["TIFF"]),
-        invalid_file("test.svg", "The mimetype SVG is invalid", valid_names=["SVG"], invalid_names=["SVG"]),
+        invalid_file(
+            "test.svg",
+            "The mimetype SVG is invalid",
+            valid_names=["SVG"],
+            invalid_names=["SVG"],
+        ),
         valid_file(
             "test.svg",
             # Unsupported mimetypes shouldn't have an effect on validation.
@@ -105,29 +116,26 @@ def test_validate_only_integers_and_whitespace(value: str, raises: bool):
     else:
         validate_only_integers_and_whitespace(value)
 
+
 @pytest.mark.parametrize(
     "value, raises",
     [
-        (
-            "https://google.com",
-            True
-        ),
+        ("https://google.com", True),
         (
             # http not allowed
             "http://services6.arcgis.com/ubm4tcTYICKBpist/ArcGIS/rest/services/hpai_dashboard/FeatureServer/0",
-            True
-        ), 
+            True,
+        ),
         (
             "https://services6.arcgis.com/ubm4tcTYICKBpist/ArcGIS/rest/services/hpai_dashboard/FeatureServer/0",
-            False            
+            False,
         ),
         (
             "https://mapservices.crd.bc.ca/arcgis/rest/services/LandCoverAnalysis/MapServer/0",
-            True
+            True,
         ),
     ],
 )
-
 def test_validate_arcgis_feature_server_link(value: str, raises: bool):
     if raises:
         with pytest.raises(ValidationError):

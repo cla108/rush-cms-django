@@ -2,11 +2,11 @@ from pytest import mark, raises
 
 from rush.models import (
     BasemapSourceOnQuestion,
+    Channel,
     Initiative,
     Layer,
     LayerGroupOnQuestion,
     LayerOnLayerGroup,
-    PublishedState,
     Question,
     QuestionTab,
     Style,
@@ -31,12 +31,12 @@ from rush.tests.models.helpers import (
 #######################
 
 
-def _duplicate_question() -> tuple[Question, Question]:
+def _duplicate_question(**kwargs) -> tuple[Question, Question]:
     """
     Create a test question instance, and a duplicate version of it.
     """
     assert Question.objects.count() == 0
-    instance = create_test_question()
+    instance = create_test_question(**kwargs)
     assert Question.objects.count() == 1
     duplicate = QuestionDuplicator(instance).duplicate()
     assert Question.objects.count() == 2
@@ -60,14 +60,18 @@ def test_question_duplicator_copies_non_unique_primitive_fields_by_value():
 
 
 @mark.django_db
-def test_question_duplicator_sets_published_state_to_draft():
+def test_question_duplicator_tags_the_duplicate_onto_the_draft_channel():
     """
-    The question duplicator should always set the published state to draft so that clients don't see
-    duplicate data on the frontend.
+    The question duplicator should always tag the duplicate onto the draft channel (and nothing else)
+    so that clients don't see duplicate data on the frontend.
     """
-    instance, duplicate = _duplicate_question()
-    assert instance.published_state == PublishedState.PUBLISHED
-    assert duplicate.published_state == PublishedState.DRAFT
+    instance, duplicate = _duplicate_question(channels=[Channel.objects.published()])
+    assert [channel.name for channel in instance.channels.all()] == [
+        Channel.PUBLISHED_NAME
+    ]
+    assert [channel.name for channel in duplicate.channels.all()] == [
+        Channel.DRAFT_NAME
+    ]
 
 
 @mark.django_db
@@ -235,7 +239,9 @@ def test_question_duplicator_creates_new_basemap_source_on_question_instances():
     """
     instance, duplicate = _duplicate_question()
     duplicate_relations = BasemapSourceOnQuestion.objects.filter(question=duplicate)
-    instance_relation_ids = get_ids(BasemapSourceOnQuestion.objects.filter(question=instance))
+    instance_relation_ids = get_ids(
+        BasemapSourceOnQuestion.objects.filter(question=instance)
+    )
     for duplicate_id in get_ids(duplicate_relations):
         assert duplicate_id not in instance_relation_ids
 
@@ -267,10 +273,16 @@ def test_question_duplicator_copies_layer_on_basemap_source_on_question_data_by_
 def test_question_duplicator_copies_correct_number_of_layers():
     instance, duplicate = _duplicate_question()
     duplicate_layers = [
-        x.layer for x in LayerOnLayerGroup.objects.filter(layer_group_on_question__question=duplicate)
+        x.layer
+        for x in LayerOnLayerGroup.objects.filter(
+            layer_group_on_question__question=duplicate
+        )
     ]
     instance_layers = [
-        x.layer for x in LayerOnLayerGroup.objects.filter(layer_group_on_question__question=instance)
+        x.layer
+        for x in LayerOnLayerGroup.objects.filter(
+            layer_group_on_question__question=instance
+        )
     ]
     assert len(instance_layers) != 0
     assert len(duplicate_layers) != 0
@@ -281,10 +293,16 @@ def test_question_duplicator_copies_correct_number_of_layers():
 def test_question_duplicator_copies_layers_by_reference():
     instance, duplicate = _duplicate_question()
     duplicate_layers = [
-        x.layer for x in LayerOnLayerGroup.objects.filter(layer_group_on_question__question=duplicate)
+        x.layer
+        for x in LayerOnLayerGroup.objects.filter(
+            layer_group_on_question__question=duplicate
+        )
     ]
     instance_layers_ids = [
-        x.layer.id for x in LayerOnLayerGroup.objects.filter(layer_group_on_question__question=instance)
+        x.layer.id
+        for x in LayerOnLayerGroup.objects.filter(
+            layer_group_on_question__question=instance
+        )
     ]
     for duplicate_layer in duplicate_layers:
         assert duplicate_layer.id in instance_layers_ids
@@ -298,8 +316,12 @@ def test_question_duplicator_copies_layers_by_reference():
 @mark.django_db
 def test_question_duplicator_copies_correct_number_of_layer_on_layer_groups():
     instance, duplicate = _duplicate_question()
-    duplicate_lolgs = LayerOnLayerGroup.objects.filter(layer_group_on_question__question=duplicate)
-    instance_lolgs = LayerOnLayerGroup.objects.filter(layer_group_on_question__question=instance)
+    duplicate_lolgs = LayerOnLayerGroup.objects.filter(
+        layer_group_on_question__question=duplicate
+    )
+    instance_lolgs = LayerOnLayerGroup.objects.filter(
+        layer_group_on_question__question=instance
+    )
     assert duplicate_lolgs.count() != 0
     assert instance_lolgs.count() != 0
     assert duplicate_lolgs.count() == instance_lolgs.count()
@@ -312,8 +334,12 @@ def test_question_duplicator_creates_new_layer_on_layer_group_instances():
     these instances join the layer and question tables. Therefore: new question ==> new joins.
     """
     instance, duplicate = _duplicate_question()
-    duplicate_lolgs = LayerOnLayerGroup.objects.filter(layer_group_on_question__question=duplicate)
-    instance_lolg_ids = get_ids(LayerOnLayerGroup.objects.filter(layer_group_on_question__question=instance))
+    duplicate_lolgs = LayerOnLayerGroup.objects.filter(
+        layer_group_on_question__question=duplicate
+    )
+    instance_lolg_ids = get_ids(
+        LayerOnLayerGroup.objects.filter(layer_group_on_question__question=instance)
+    )
     for duplicate_id in get_ids(duplicate_lolgs):
         assert duplicate_id not in instance_lolg_ids
 
@@ -327,7 +353,9 @@ def test_question_duplicator_copies_layer_on_layer_group_data_by_value():
     instance, duplicate = _duplicate_question()
     data = lambda question: [
         x
-        for x in LayerOnLayerGroup.objects.filter(layer_group_on_question__question=question)
+        for x in LayerOnLayerGroup.objects.filter(
+            layer_group_on_question__question=question
+        )
         .values_list("layer", "active_by_default", "display_order")
         .order_by("display_order")
     ]
@@ -387,12 +415,12 @@ def test_question_duplicator_copies_layer_group_on_question_data_by_value():
 #########################
 
 
-def _duplicate_initiative() -> tuple[Initiative, Initiative]:
+def _duplicate_initiative(**kwargs) -> tuple[Initiative, Initiative]:
     """
     Create a test initiative instance, and a duplicate version of it.
     """
     assert Initiative.objects.count() == 0
-    instance = create_test_initiative()
+    instance = create_test_initiative(**kwargs)
     assert Initiative.objects.count() == 1
     duplicate = InitiativeDuplicator(instance).duplicate()
     assert Initiative.objects.count() == 2
@@ -414,14 +442,18 @@ def test_initiative_duplicator_copies_non_unique_primitive_fields_by_value():
 
 
 @mark.django_db
-def test_initiative_duplicator_sets_published_state_to_draft():
+def test_initiative_duplicator_tags_the_duplicate_onto_the_draft_channel():
     """
-    The initiative duplicator should always set the published state to draft so that clients don't see
-    duplicate data on the frontend.
+    The initiative duplicator should always tag the duplicate onto the draft channel (and nothing else)
+    so that clients don't see duplicate data on the frontend.
     """
-    instance, duplicate = _duplicate_initiative()
-    assert instance.published_state == PublishedState.PUBLISHED
-    assert duplicate.published_state == PublishedState.DRAFT
+    instance, duplicate = _duplicate_initiative(channels=[Channel.objects.published()])
+    assert [channel.name for channel in instance.channels.all()] == [
+        Channel.PUBLISHED_NAME
+    ]
+    assert [channel.name for channel in duplicate.channels.all()] == [
+        Channel.DRAFT_NAME
+    ]
 
 
 @mark.django_db
@@ -463,12 +495,12 @@ def test_initiative_duplicator_copies_initiative_tags_by_reference():
 ####################
 
 
-def _duplicate_layer() -> tuple[Layer, Layer]:
+def _duplicate_layer(**kwargs) -> tuple[Layer, Layer]:
     """
     Create a test layer instance, and a duplicate version of it.
     """
     assert Layer.objects.count() == 0
-    instance = create_test_layer()
+    instance = create_test_layer(**kwargs)
     assert Layer.objects.count() == 1
     duplicate = LayerDuplicator(instance).duplicate()
     assert Layer.objects.count() == 2
@@ -490,14 +522,18 @@ def test_layer_duplicator_copies_non_unique_primitive_fields_by_value():
 
 
 @mark.django_db
-def test_layer_duplicator_sets_published_state_to_draft():
+def test_layer_duplicator_tags_the_duplicate_onto_the_draft_channel():
     """
-    The layer duplicator should always set the published state to draft so that clients don't see
-    duplicate data on the frontend.
+    The layer duplicator should always tag the duplicate onto the draft channel (and nothing else)
+    so that clients don't see duplicate data on the frontend.
     """
-    instance, duplicate = _duplicate_layer()
-    assert instance.published_state == PublishedState.PUBLISHED
-    assert duplicate.published_state == PublishedState.DRAFT
+    instance, duplicate = _duplicate_layer(channels=[Channel.objects.published()])
+    assert [channel.name for channel in instance.channels.all()] == [
+        Channel.PUBLISHED_NAME
+    ]
+    assert [channel.name for channel in duplicate.channels.all()] == [
+        Channel.DRAFT_NAME
+    ]
 
 
 @mark.django_db
@@ -555,7 +591,9 @@ def test_layer_duplicator_copies_styles_on_layer_data_by_value():
     data = lambda layer: [
         x
         for x in StylesOnLayer.objects.filter(layer=layer)
-        .values_list("style", "legend_description", "display_order", "feature_mapping", "popup")
+        .values_list(
+            "style", "legend_description", "display_order", "feature_mapping", "popup"
+        )
         .order_by("display_order")
     ]
 
@@ -587,7 +625,9 @@ def test_layer_duplicator_copies_correct_number_of_tooltips():
 def test_layer_duplicator_creates_new_tooltip_instances():
     instance, duplicate = _duplicate_layer()
     duplicate_tooltips = Tooltip.objects.filter(style_on_layer__layer=duplicate)
-    instance_tooltip_ids = get_ids(Tooltip.objects.filter(style_on_layer__layer=instance))
+    instance_tooltip_ids = get_ids(
+        Tooltip.objects.filter(style_on_layer__layer=instance)
+    )
     for duplicate_id in get_ids(duplicate_tooltips):
         assert duplicate_id not in instance_tooltip_ids
 

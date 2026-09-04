@@ -51,5 +51,7 @@ class Migration(migrations.Migration):
                 ],
             },
         ),
-        migrations.RunPython(code=populate_svg_png_tiff_jpeg, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            code=populate_svg_png_tiff_jpeg, reverse_code=migrations.RunPython.noop
+        ),
     ]

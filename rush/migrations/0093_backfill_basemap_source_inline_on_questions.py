@@ -15,7 +15,12 @@ def backfill(apps, schema_editor):
     default_basemap = BasemapSource.objects.get(is_default=True)
     BaseMapSourceOnQuestion = apps.get_model("rush", "BasemapSourceOnQuestion")
     for question in Question.objects.all():
-        print("Backfilling question {} with default basemap source...".format(question.title), end="")
+        print(
+            "Backfilling question {} with default basemap source...".format(
+                question.title
+            ),
+            end="",
+        )
         BaseMapSourceOnQuestion.objects.create(
             question=question,
             basemap_source=default_basemap,

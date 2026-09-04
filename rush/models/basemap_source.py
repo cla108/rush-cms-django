@@ -27,7 +27,9 @@ class BasemapSource(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, null=False)
     name = models.CharField(max_length=255)
-    tile_url = models.CharField(max_length=2000, null=False, validators=[URLValidator(schemes=["https"])])
+    tile_url = models.CharField(
+        max_length=2000, null=False, validators=[URLValidator(schemes=["https"])]
+    )
     max_zoom = models.PositiveIntegerField()
     attribution = models.TextField()
     attribution_strict_clean = models.BooleanField(default=True)

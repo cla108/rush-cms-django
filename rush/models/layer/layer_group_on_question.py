@@ -27,12 +27,20 @@ class LayerGroupOnQuestion(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, null=False)
     group_name = models.CharField(max_length=255)
-    group_description = models.TextField(blank=True, help_text="An optional description for the group.")
+    group_description = models.TextField(
+        blank=True, help_text="An optional description for the group."
+    )
     group_description_strict_clean = models.BooleanField(default=True)
-    question = models.ForeignKey(to="Question", on_delete=models.CASCADE, related_name="layer_groups")
-    display_order = models.PositiveIntegerField(default=0, blank=False, null=False, db_index=True, editable=True)
+    question = models.ForeignKey(
+        to="Question", on_delete=models.CASCADE, related_name="layer_groups"
+    )
+    display_order = models.PositiveIntegerField(
+        default=0, blank=False, null=False, db_index=True, editable=True
+    )
 
-    behaviour = models.CharField(max_length=255, default=Behaviour.DEFAULT, choices=Behaviour.choices)
+    behaviour = models.CharField(
+        max_length=255, default=Behaviour.DEFAULT, choices=Behaviour.choices
+    )
 
     def max_display_order(self) -> int:
         """
@@ -44,7 +52,9 @@ class LayerGroupOnQuestion(models.Model):
         return max_order
 
     def clean(self) -> None:
-        self.group_description = SummernoteTextCleaner.clean(self.group_description, strict_clean=self.group_description_strict_clean)
+        self.group_description = SummernoteTextCleaner.clean(
+            self.group_description, strict_clean=self.group_description_strict_clean
+        )
 
     def __str__(self):
         return self.group_name

@@ -6,11 +6,11 @@ from django.db.models import Model
 
 from rush.models import (
     BasemapSourceOnQuestion,
+    Channel,
     Initiative,
     Layer,
     LayerGroupOnQuestion,
     LayerOnLayerGroup,
-    PublishedState,
     Question,
     QuestionTab,
     StylesOnLayer,
@@ -89,8 +89,9 @@ class QuestionDuplicator(DuplicatorBase):
             sash=self.instance.sash,
             region=self.instance.region,
             display_order=0,
-            published_state=PublishedState.DRAFT,
         )
+        # Duplicate Questions always start life on the draft channel only.
+        duplicate.channels.set([Channel.objects.default_create_channel()])
 
         # Copy initiatives by reference
         duplicate.initiatives.set(self.instance.initiatives.all())
@@ -161,8 +162,9 @@ class InitiativeDuplicator(DuplicatorBase):
             image=self.instance.image,
             title=f"DUPLICATE - {self.instance.title}",
             content=self.instance.content,
-            published_state=PublishedState.DRAFT,
         )
+        # Duplicate Initiatives always start life on the draft channel only.
+        duplicate.channels.set([Channel.objects.default_create_channel()])
         duplicate.tags.set(self.instance.tags.all())
         return duplicate
 
@@ -184,8 +186,10 @@ class LayerDuplicator(DuplicatorBase):
             description=self.instance.description,
             map_data=self.instance.map_data,
             serialized_leaflet_json=self.instance.serialized_leaflet_json,
-            published_state=PublishedState.DRAFT,
         )
+
+        # Duplicate Layers always start life on the draft channel only.
+        duplicate.channels.set([Channel.objects.default_create_channel()])
         for styles_on_layer in StylesOnLayer.objects.filter(layer=self.instance):
 
             # create related styles-on-layer
@@ -199,7 +203,9 @@ class LayerDuplicator(DuplicatorBase):
             )
 
             # create double-related tooltip (if it exists)
-            if tooltip := Tooltip.objects.filter(style_on_layer__id=styles_on_layer.id).first():
+            if tooltip := Tooltip.objects.filter(
+                style_on_layer__id=styles_on_layer.id
+            ).first():
                 Tooltip.objects.create(
                     style_on_layer=duplicate_style_on_layer,
                     label=tooltip.label,

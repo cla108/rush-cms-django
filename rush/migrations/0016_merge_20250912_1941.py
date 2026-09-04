@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0011_merge_20250722_2020'),
-        ('rush', '0015_alter_layeronquestion_id'),
+        ("rush", "0011_merge_20250722_2020"),
+        ("rush", "0015_alter_layeronquestion_id"),
     ]
 
-    operations = [
-    ]
+    operations = []

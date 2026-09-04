@@ -26,5 +26,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(clean_initiative_content, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            clean_initiative_content, reverse_code=migrations.RunPython.noop
+        ),
     ]

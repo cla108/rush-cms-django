@@ -1,22 +1,36 @@
 from django.contrib.admin import ModelAdmin, action, display, register
 from django.http import HttpResponseRedirect
 
-from rush.admin.filters import PublishedStateFilter
+from rush.admin.filters import ChannelFilter
 from rush.admin.initiative.forms import InitiativeForm
-from rush.admin.utils import SuperuserStrictCleanMixin, image_html, truncate_admin_text_from
+from rush.admin.utils import (
+    DefaultChannelMixin,
+    channel_links_html,
+    SuperuserStrictCleanMixin,
+    image_html,
+    truncate_admin_text_from,
+)
 from rush.models import Initiative
 from rush.models.duplicators import InitiativeDuplicator
 
 
 @register(Initiative)
-class InitiativeAdmin(SuperuserStrictCleanMixin, ModelAdmin):
+class InitiativeAdmin(DefaultChannelMixin, SuperuserStrictCleanMixin, ModelAdmin):
     form = InitiativeForm
-    list_display = ["title", "link", "content_preview", "image_preview", "get_tags", "site_visibility"]
-    list_filter = [PublishedStateFilter]
+    list_display = [
+        "title",
+        "link",
+        "content_preview",
+        "image_preview",
+        "get_tags",
+        "channels_preview",
+    ]
+    list_filter = [ChannelFilter]
     content_preview = truncate_admin_text_from("content")
     autocomplete_fields = [
         # uses the searchable textbox in the admin form to add/remove Tags
-        "tags"
+        "tags",
+        "channels",
     ]
     search_fields = ["title"]
     actions = ["duplicate_object"]
@@ -25,17 +39,19 @@ class InitiativeAdmin(SuperuserStrictCleanMixin, ModelAdmin):
     def duplicate_object(self, request, queryset):
         for obj in queryset:
             InitiativeDuplicator(obj).duplicate()
-        self.message_user(request, f"Successfully duplicated {queryset.count()} item(s).")
-        return HttpResponseRedirect("?published_state=all")
+        self.message_user(
+            request, f"Successfully duplicated {queryset.count()} item(s)."
+        )
+        return HttpResponseRedirect("?channel=all")
 
-    @display(description="Site Visibility")
-    def site_visibility(self, obj):
-        return obj.published_state
+    @display(description="Channels")
+    def channels_preview(self, obj):
+        return channel_links_html(obj.channels.all())
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # Prefetch tags to avoid N+1 queries in get_tags() display method
-        return qs.prefetch_related("tags")
+        # Prefetch tags/channels to avoid N+1 queries in the display methods
+        return qs.prefetch_related("tags", "channels")
 
     def image_preview(self, obj):
         """

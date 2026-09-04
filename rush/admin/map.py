@@ -13,8 +13,13 @@ from silk.profiling.dynamic import silk_profile
 
 from rush import models
 from rush.admin import utils
-from rush.admin.filters import PublishedStateFilter
-from rush.admin.utils import SuperuserStrictCleanMixin, truncate_admin_text_from
+from rush.admin.filters import ChannelFilter
+from rush.admin.utils import (
+    DefaultChannelMixin,
+    channel_links_html,
+    SuperuserStrictCleanMixin,
+    truncate_admin_text_from,
+)
 from rush.admin.widgets import SummernoteWidget
 from rush.models.duplicators import LayerDuplicator
 from rush.models.style.tooltip import Direction
@@ -33,11 +38,15 @@ class StylesOnLayerInlineForm(forms.ModelForm):
 
     # Related Tooltip fields
     label = forms.CharField(required=False, label="Tooltip Label")
-    label_strict_clean = forms.BooleanField(required=False, label="Tooltip Label Strict Clean")
+    label_strict_clean = forms.BooleanField(
+        required=False, label="Tooltip Label Strict Clean"
+    )
     offset_x = forms.DecimalField(required=False, label="Tooltip offset X")
     offset_y = forms.DecimalField(required=False, label="Tooltip offset Y")
     opacity = forms.DecimalField(required=False, label="Tooltip Opacity")
-    direction = forms.ChoiceField(choices=Direction.choices, required=False, label="Tooltip Direction")
+    direction = forms.ChoiceField(
+        choices=Direction.choices, required=False, label="Tooltip Direction"
+    )
     permanent = forms.BooleanField(required=False, label="Tooltip Permanent")
     sticky = forms.BooleanField(required=False, label="Tooltip Sticky")
 
@@ -68,17 +77,27 @@ class StylesOnLayerInlineForm(forms.ModelForm):
             styleTags=[],
             toolbar=[["font", ["bold", "italic", "underline"]]],
         )
-        self.fields["offset_x"].widget = utils.SliderAndTextboxNumberInput(min=-100, max=100, step=1)
-        self.fields["offset_y"].widget = utils.SliderAndTextboxNumberInput(min=-100, max=100, step=1)
-        self.fields["opacity"].widget = utils.SliderAndTextboxNumberInput(max=1, step=0.01)
+        self.fields["offset_x"].widget = utils.SliderAndTextboxNumberInput(
+            min=-100, max=100, step=1
+        )
+        self.fields["offset_y"].widget = utils.SliderAndTextboxNumberInput(
+            min=-100, max=100, step=1
+        )
+        self.fields["opacity"].widget = utils.SliderAndTextboxNumberInput(
+            max=1, step=0.01
+        )
 
         # Setting help text is done here instead of on the model because we're using custom form fields and
         # Django cannot automatically relate the tooltip formfields (on this form) to the tooltip model's fields.
-        self.fields["direction"].help_text = "Where to draw the label relative to the marker."
+        self.fields["direction"].help_text = (
+            "Where to draw the label relative to the marker."
+        )
         self.fields["permanent"].help_text = (
             "Turn this off if you only want the label to be visible when a user hovers their mouse over the marker area."
         )
-        self.fields["sticky"].help_text = "Whether text attaches to the cursor when nearby."
+        self.fields["sticky"].help_text = (
+            "Whether text attaches to the cursor when nearby."
+        )
 
     def _populate_initial_tooltip_fields(self, tooltip: models.Tooltip) -> None:
         """
@@ -129,7 +148,9 @@ class StylesOnLayerInlineForm(forms.ModelForm):
             # set tooltip object on styles-on-layer
             if self.instance is None:
                 tooltip.delete()
-                raise ValueError("Cannot save related tooltip if no styles-on-layer object exists on the form.")
+                raise ValueError(
+                    "Cannot save related tooltip if no styles-on-layer object exists on the form."
+                )
             self.instance.tooltip = tooltip
             tooltip.style_on_layer = self.instance
 
@@ -141,7 +162,10 @@ class StylesOnLayerInlineForm(forms.ModelForm):
         except Exception as e:
             raise ValueError(
                 "Could not save related tooltip on styles on layer",
-                {"tooltip": tooltip.id, "styles_on_layer": self.instance.id if self.instance else None},
+                {
+                    "tooltip": tooltip.id,
+                    "styles_on_layer": self.instance.id if self.instance else None,
+                },
             ) from e
 
     def _get_related_tooltip_or_none(self) -> models.Tooltip | None:
@@ -165,7 +189,10 @@ class StylesOnLayerInlineForm(forms.ModelForm):
             # By default, don't draw a popup
             self.fields["draw_popup"].initial = False
         else:
-            if self.instance.popup is not None and str(self.instance.popup).strip() != "":
+            if (
+                self.instance.popup is not None
+                and str(self.instance.popup).strip() != ""
+            ):
                 # If the popup already contains text, then check the box
                 self.fields["draw_popup"].initial = True
             else:
@@ -203,7 +230,9 @@ class StylesOnLayerInlineForm(forms.ModelForm):
                 self._save_tooltip_with_form_field_values(tooltip)
 
 
-class StyleOnLayerInline(SuperuserStrictCleanMixin, sortable_admin.SortableStackedInline, admin.StackedInline):
+class StyleOnLayerInline(
+    SuperuserStrictCleanMixin, sortable_admin.SortableStackedInline, admin.StackedInline
+):
     form = StylesOnLayerInlineForm
     verbose_name_plural = "Styles applied to this Layer"
     model = models.StylesOnLayer
@@ -246,7 +275,9 @@ class LayerForm(forms.ModelForm):
 
         ...
 
-    serialized_leaflet_json = forms.CharField(widget=forms.HiddenInput(), required=False)
+    serialized_leaflet_json = forms.CharField(
+        widget=forms.HiddenInput(), required=False
+    )
     map_data = MapDataChoiceField(
         # Defer loading the large _geojson field to improve form rendering performance
         # Only load id, name, and provider_state which are needed for the dropdown
@@ -275,31 +306,42 @@ class LayerForm(forms.ModelForm):
 
 
 @admin.register(models.Layer)
-class LayerAdmin(SuperuserStrictCleanMixin, sortable_admin.SortableAdminBase, admin.ModelAdmin):  # type: ignore
+class LayerAdmin(  # type: ignore
+    DefaultChannelMixin,
+    SuperuserStrictCleanMixin,
+    sortable_admin.SortableAdminBase,
+    admin.ModelAdmin,
+):
     form = LayerForm
     inlines = [StyleOnLayerInline]
-    autocomplete_fields = ["map_data"]
+    autocomplete_fields = ["map_data", "channels"]
     search_fields = ["name"]
-    list_display = ["name", "description_preview", "site_visibility"]
+    list_display = ["name", "description_preview", "channels_preview"]
     description_preview = truncate_admin_text_from("description")
-    list_filter = [PublishedStateFilter]
+    list_filter = [ChannelFilter]
     actions = ["duplicate_object"]
 
     @admin.action(description="Duplicate selected items")
     def duplicate_object(self, request, queryset):
         for obj in queryset:
             LayerDuplicator(obj).duplicate()
-        self.message_user(request, f"Successfully duplicated {queryset.count()} item(s).")
-        return HttpResponseRedirect("?published_state=all")
+        self.message_user(
+            request, f"Successfully duplicated {queryset.count()} item(s)."
+        )
+        return HttpResponseRedirect("?channel=all")
 
-    @admin.display(description="Site Visibility")
-    def site_visibility(self, obj):
-        return obj.published_state
+    @admin.display(description="Channels")
+    def channels_preview(self, obj):
+        return channel_links_html(obj.channels.all())
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         # Defer expensive fields when listing Layers
-        return qs.select_related("map_data").defer("serialized_leaflet_json", "map_data___geojson")
+        return (
+            qs.select_related("map_data")
+            .prefetch_related("channels")
+            .defer("serialized_leaflet_json", "map_data___geojson")
+        )
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         """Handles both GET (load form) and POST (save form) requests"""
@@ -309,7 +351,9 @@ class LayerAdmin(SuperuserStrictCleanMixin, sortable_admin.SortableAdminBase, ad
             return super().changeform_view(request, object_id, form_url, extra_context)
 
     @silk_profile(name="LayerAdmin save_model")
-    def save_model(self, request: HttpRequest, obj: Any, form: forms.ModelForm, change: bool) -> None:
+    def save_model(
+        self, request: HttpRequest, obj: Any, form: forms.ModelForm, change: bool
+    ) -> None:
         return super().save_model(request, obj, form, change)
 
     @silk_profile(name="LayerAdmin get_form")
@@ -377,7 +421,9 @@ class MapDataAdminFormConfig:
                 fields.append(field)
         return fields
 
-    def get_provider(self, provider_state: models.MapData.ProviderState | str) -> Provider | None:
+    def get_provider(
+        self, provider_state: models.MapData.ProviderState | str
+    ) -> Provider | None:
         """
         Get an admin form config `Provider` from a `ProviderState`, or return None if none could be found.
         """
@@ -420,7 +466,12 @@ class MapDataAdminForm(forms.ModelForm):
 
     class Meta:
         model = models.MapData
-        fields = ["id", "name", "provider_state", *[field.fieldname for field in mdaf_config.get_fields()]]
+        fields = [
+            "id",
+            "name",
+            "provider_state",
+            *[field.fieldname for field in mdaf_config.get_fields()],
+        ]
         labels = {"provider_state": "Data Type"}
 
     def get_initial_for_field(self, field, field_name):
@@ -455,7 +506,9 @@ class MapDataAdminForm(forms.ModelForm):
             # Exit early
             return cleaned_data
 
-        required_fieldnames = [field.fieldname for field in provider.fields if field.required]
+        required_fieldnames = [
+            field.fieldname for field in provider.fields if field.required
+        ]
         for fieldname in required_fieldnames:
             if fieldname not in self.errors:
                 if fieldname not in cleaned_data or not cleaned_data[fieldname]:
@@ -463,7 +516,9 @@ class MapDataAdminForm(forms.ModelForm):
                     self.add_error(fieldname, "This field is required.")
 
         non_provider_fieldnames = [
-            field.fieldname for field in mdaf_config.get_fields() if field not in provider.fields
+            field.fieldname
+            for field in mdaf_config.get_fields()
+            if field not in provider.fields
         ]
         for fieldname in non_provider_fieldnames:
             # Ignore fields dynamically (belonging to other provider states)
@@ -494,7 +549,9 @@ class MapDataAdmin(admin.ModelAdmin):
             return super().changeform_view(request, object_id, form_url, extra_context)
 
     @silk_profile(name="MapDataAdmin save")
-    def save_model(self, request: HttpRequest, obj: Any, form: forms.ModelForm, change: bool) -> None:
+    def save_model(
+        self, request: HttpRequest, obj: Any, form: forms.ModelForm, change: bool
+    ) -> None:
         return super().save_model(request, obj, form, change)
 
     @silk_profile(name="MapDataAdmin get_form")
@@ -531,7 +588,9 @@ class MapDataAdmin(admin.ModelAdmin):
                 if raw_geojson := map_data.geojson:
                     geojson = raw_geojson
         geojson = "{}" if geojson is None else geojson
-        context["map_data_admin_form_config"] = mark_safe(json.dumps(asdict(mdaf_config)))
+        context["map_data_admin_form_config"] = mark_safe(
+            json.dumps(asdict(mdaf_config))
+        )
         context["initial_geojson_data"] = mark_safe(geojson)
         return super().render_change_form(request, context, *args, **kwargs)
 
@@ -579,7 +638,9 @@ class StyleForm(forms.ModelForm):
             "name",
         ]
         widgets = {
-            "stroke_weight": utils.SliderAndTextboxNumberInput(max=30, step=0.05, attrs={"class": "inline-field"}),
+            "stroke_weight": utils.SliderAndTextboxNumberInput(
+                max=30, step=0.05, attrs={"class": "inline-field"}
+            ),
             "stroke_opacity": utils.SliderAndTextboxNumberInput(),
             "stroke_dash_offset": utils.SliderAndTextboxNumberInput(max=100, step=1),
             "fill_opacity": utils.SliderAndTextboxNumberInput(),
@@ -593,7 +654,9 @@ class StyleForm(forms.ModelForm):
             ),
             "circle_stroke_opacity": utils.SliderAndTextboxNumberInput(),
             "circle_fill_opacity": utils.SliderAndTextboxNumberInput(),
-            "circle_stroke_dash_offset": utils.SliderAndTextboxNumberInput(max=100, step=1),
+            "circle_stroke_dash_offset": utils.SliderAndTextboxNumberInput(
+                max=100, step=1
+            ),
         }
 
 

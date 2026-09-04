@@ -14,6 +14,7 @@ from PIL import Image
 from rush.models import (
     BasemapSource,
     BasemapSourceOnQuestion,
+    Channel,
     Icon,
     Initiative,
     InitiativeTag,
@@ -22,7 +23,6 @@ from rush.models import (
     LayerOnLayerGroup,
     MapData,
     MimeType,
-    PublishedState,
     Question,
     QuestionSash,
     QuestionTab,
@@ -64,7 +64,9 @@ def use_tmp_media_dir(func):
     return wrapper
 
 
-def create_test_image(name: str, size=(100, 100), color=(255, 0, 0)) -> SimpleUploadedFile:
+def create_test_image(
+    name: str, size=(100, 100), color=(255, 0, 0)
+) -> SimpleUploadedFile:
     ext = name.split(".")[-1].lower()
     if ext.lower() == "jpg":
         ext = "jpeg"
@@ -106,7 +108,10 @@ SINGLETON_REGION = None
 
 def _provide_singleton_test_region() -> Region:
     global SINGLETON_REGION
-    if SINGLETON_REGION is None or not Region.objects.filter(id=SINGLETON_REGION.id).exists():
+    if (
+        SINGLETON_REGION is None
+        or not Region.objects.filter(id=SINGLETON_REGION.id).exists()
+    ):
         SINGLETON_REGION = create_test_region()
     return SINGLETON_REGION
 
@@ -131,6 +136,16 @@ def _provide_initiative_tags() -> list[InitiativeTag]:
     ]
 
 
+def _provide_default_channel() -> list[Channel]:
+    """
+    Test content lands on the default create channel unless a test asks for something else.
+    """
+    channel, _ = Channel.objects.get_or_create(name=Channel.DEFAULT_CREATE_CHANNEL)
+    return [channel]
+
+
+DEFAULT_CHANNELS_PROVIDER = _provide_default_channel
+
 DEFAULT_INITIATIVE_IMAGE = create_test_image("test_initiative_image.png")
 DEFAULT_INITIATIVE_TAGS_PROVIDER = _provide_initiative_tags
 
@@ -140,19 +155,22 @@ def create_test_initiative(
     image: SimpleUploadedFile = DEFAULT_INITIATIVE_IMAGE,
     title="A test initiative",
     content="This is a test initiative. Please read carefully and enjoy!",
-    tags: list[InitiativeTag] | Callable[[], list[InitiativeTag]] = DEFAULT_INITIATIVE_TAGS_PROVIDER,
-    published_state=PublishedState.PUBLISHED,
+    tags: (
+        list[InitiativeTag] | Callable[[], list[InitiativeTag]]
+    ) = DEFAULT_INITIATIVE_TAGS_PROVIDER,
+    channels: list[Channel] | Callable[[], list[Channel]] = DEFAULT_CHANNELS_PROVIDER,
 ) -> Initiative:
     tags = tags if not isinstance(tags, Callable) else tags()
+    channels = channels if not isinstance(channels, Callable) else channels()
     initiative = Initiative.objects.create(
         link=link,
         image=image,
         title=title,
         content=content,
-        published_state=published_state,
     )
-    # tags must be set like this because they are a many-to-many field
+    # tags/channels must be set like this because they are many-to-many fields
     initiative.tags.set(tags)
+    initiative.channels.set(channels)
     return initiative
 
 
@@ -190,7 +208,9 @@ def create_test_icon(file_prefix="example_icon", mimetype="PNG") -> Icon:
 
 
 DEFAULT_QUESTION_TAB_ICON_PROVIDER = create_test_icon
-DEFAULT_QUESTION_TAB_SLUG_RESOLVER = lambda question: f"question-tab-slug-{question.tabs.count()}"
+DEFAULT_QUESTION_TAB_SLUG_RESOLVER = (
+    lambda question: f"question-tab-slug-{question.tabs.count()}"
+)
 DEFAULT_QUESTION_TAB_DISPLAY_ORDER_RESOLVER = lambda question: question.tabs.count()
 
 
@@ -200,10 +220,16 @@ def create_test_question_tab(
     title="Test question tab",
     content="Test content.",
     slug: str | Callable[[Question], str] = DEFAULT_QUESTION_TAB_SLUG_RESOLVER,
-    display_order: int | Callable[[Question], int] = DEFAULT_QUESTION_TAB_DISPLAY_ORDER_RESOLVER,
+    display_order: (
+        int | Callable[[Question], int]
+    ) = DEFAULT_QUESTION_TAB_DISPLAY_ORDER_RESOLVER,
 ) -> QuestionTab:
     slug = slug if not isinstance(slug, Callable) else slug(question)
-    display_order = display_order if not isinstance(display_order, Callable) else display_order(question)
+    display_order = (
+        display_order
+        if not isinstance(display_order, Callable)
+        else display_order(question)
+    )
     icon = icon if not isinstance(icon, Callable) else icon()
     return QuestionTab.objects.create(
         question=question,
@@ -248,7 +274,9 @@ def _provide_singleton_test_basemap_sources() -> list[BasemapSource]:
         # First test-run
         SECOND_BASEMAP_SOURCE_SINGLETON is None
         # Subsequent test-runs (it's been deleted from the database during a reset)
-        or not BasemapSource.objects.filter(id=SECOND_BASEMAP_SOURCE_SINGLETON.id).exists()
+        or not BasemapSource.objects.filter(
+            id=SECOND_BASEMAP_SOURCE_SINGLETON.id
+        ).exists()
     ):
         SECOND_BASEMAP_SOURCE_SINGLETON = create_test_basemap_source(name="Heightmap")
     return [
@@ -409,13 +437,19 @@ def create_test_styles_on_layer(
     layer: Layer,
     style: Style | Callable[[], Style] = DEFAULT_STYLE_PROVIDER,
     legend_description="This is a test layer's legend description!",
-    display_order: int | Callable[[Layer], int] = DEFAULT_STYLES_ON_LAYER_DISPLAY_ORDER_PROVIDER,
+    display_order: (
+        int | Callable[[Layer], int]
+    ) = DEFAULT_STYLES_ON_LAYER_DISPLAY_ORDER_PROVIDER,
     feature_mapping="true",
     popup="<h1>Popup text!</h1>",
     tooltip: None | Callable[[StylesOnLayer], Tooltip] = DEFAULT_TOOLTIP_PROVIDER,
 ) -> StylesOnLayer:
     style = style if not isinstance(style, Callable) else style()
-    display_order = display_order if not isinstance(display_order, Callable) else display_order(layer)
+    display_order = (
+        display_order
+        if not isinstance(display_order, Callable)
+        else display_order(layer)
+    )
     styles_on_layer = StylesOnLayer.objects.create(
         style=style,
         layer=layer,
@@ -448,17 +482,21 @@ def create_test_layer(
     legend_title="Test legend title.",
     description="This is a test layer!",
     map_data: MapData | Callable[[], MapData] = DEFAULT_MAP_DATA_PROVIDER,
-    published_state=PublishedState.PUBLISHED,
-    styles_on_layer: Callable[[Layer], list[StylesOnLayer]] = DEFAULT_STYLES_ON_LAYER_PROVIDER,
+    channels: list[Channel] | Callable[[], list[Channel]] = DEFAULT_CHANNELS_PROVIDER,
+    styles_on_layer: Callable[
+        [Layer], list[StylesOnLayer]
+    ] = DEFAULT_STYLES_ON_LAYER_PROVIDER,
 ) -> Layer:
     map_data = map_data if not isinstance(map_data, Callable) else map_data()
+    channels = channels if not isinstance(channels, Callable) else channels()
     layer = Layer.objects.create(
         name=name,
         legend_title=legend_title,
         description=description,
         map_data=map_data,
-        published_state=published_state,
     )
+    # channels must be set like this because they are a many-to-many field
+    layer.channels.set(channels)
     # should automatically link Layer <--> StylesOnLayer
     styles_on_layer(layer)
     return layer
@@ -481,9 +519,11 @@ def _incremental_geojson_layer(
 
 
 DEFAULT_LAYER_RESOLVER = _incremental_geojson_layer
-DEFAULT_LAYER_ON_LAYER_GROUP_DISPLAY_ORDER_RESOLVER = lambda group: LayerOnLayerGroup.objects.filter(
-    layer_group_on_question=group
-).count()
+DEFAULT_LAYER_ON_LAYER_GROUP_DISPLAY_ORDER_RESOLVER = (
+    lambda group: LayerOnLayerGroup.objects.filter(
+        layer_group_on_question=group
+    ).count()
+)
 
 
 def create_test_layer_on_layer_group(
@@ -495,7 +535,11 @@ def create_test_layer_on_layer_group(
     ) = DEFAULT_LAYER_ON_LAYER_GROUP_DISPLAY_ORDER_RESOLVER,
 ) -> LayerOnLayerGroup:
     layer = layer if not isinstance(layer, Callable) else layer()
-    display_order = display_order if not isinstance(display_order, Callable) else display_order(layer_group)
+    display_order = (
+        display_order
+        if not isinstance(display_order, Callable)
+        else display_order(layer_group)
+    )
     return LayerOnLayerGroup.objects.create(
         layer=layer,
         layer_group_on_question=layer_group,
@@ -504,7 +548,9 @@ def create_test_layer_on_layer_group(
     )
 
 
-def _provide_test_layers_on_layer_group(layer_group: LayerGroupOnQuestion) -> list[LayerOnLayerGroup]:
+def _provide_test_layers_on_layer_group(
+    layer_group: LayerGroupOnQuestion,
+) -> list[LayerOnLayerGroup]:
     return [
         create_test_layer_on_layer_group(layer_group),
         create_test_layer_on_layer_group(layer_group),
@@ -513,7 +559,9 @@ def _provide_test_layers_on_layer_group(layer_group: LayerGroupOnQuestion) -> li
     ]
 
 
-DEFAULT_LAYER_GROUP_ON_QUESTION_DISPLAY_ORDER_RESOLVER = lambda: LayerGroupOnQuestion.objects.count()
+DEFAULT_LAYER_GROUP_ON_QUESTION_DISPLAY_ORDER_RESOLVER = (
+    lambda: LayerGroupOnQuestion.objects.count()
+)
 DEFAULT_LAYERS_ON_LAYER_GROUP_PROVIDER = _provide_test_layers_on_layer_group
 
 
@@ -522,12 +570,17 @@ def create_test_layer_group(
     group_name="Test layer group",
     group_description="This is a test layer group.",
     layers_on_layer_group: (
-        list[LayerOnLayerGroup] | Callable[[LayerGroupOnQuestion], list[LayerOnLayerGroup]]
+        list[LayerOnLayerGroup]
+        | Callable[[LayerGroupOnQuestion], list[LayerOnLayerGroup]]
     ) = DEFAULT_LAYERS_ON_LAYER_GROUP_PROVIDER,
-    display_order: int | Callable[[], int] = DEFAULT_LAYER_GROUP_ON_QUESTION_DISPLAY_ORDER_RESOLVER,
+    display_order: (
+        int | Callable[[], int]
+    ) = DEFAULT_LAYER_GROUP_ON_QUESTION_DISPLAY_ORDER_RESOLVER,
     behaviour=LayerGroupOnQuestion.Behaviour.DEFAULT,
 ) -> LayerGroupOnQuestion:
-    display_order = display_order if not isinstance(display_order, Callable) else display_order()
+    display_order = (
+        display_order if not isinstance(display_order, Callable) else display_order()
+    )
     group = LayerGroupOnQuestion.objects.create(
         question=question,
         group_name=group_name,
@@ -536,7 +589,9 @@ def create_test_layer_group(
         behaviour=behaviour,
     )
     layers_on_layer_group = (
-        layers_on_layer_group if not isinstance(layers_on_layer_group, Callable) else layers_on_layer_group(group)
+        layers_on_layer_group
+        if not isinstance(layers_on_layer_group, Callable)
+        else layers_on_layer_group(group)
     )
     group.layers.set(layers_on_layer_group)  # type: ignore
     return group
@@ -565,24 +620,37 @@ def create_test_question(
     subtitle="This is a test question",
     image: SimpleUploadedFile | None = DEFAULT_QUESTION_IMAGE,
     is_image_compressed=True,
-    initiatives: list[Initiative] | Callable[[], list[Initiative]] = DEFAULT_QUESTION_INITIATIVES_PROVIDER,
+    initiatives: (
+        list[Initiative] | Callable[[], list[Initiative]]
+    ) = DEFAULT_QUESTION_INITIATIVES_PROVIDER,
     layer_groups: (
-        list[LayerGroupOnQuestion] | Callable[[Question], list[LayerGroupOnQuestion]] | None
+        list[LayerGroupOnQuestion]
+        | Callable[[Question], list[LayerGroupOnQuestion]]
+        | None
     ) = DEFAULT_LAYER_GROUPS_PROVIDER,
     slug: str | Callable[[], str] = DEFAULT_QUESTION_SLUG_RESOLVER,
-    sash: QuestionSash | None | Callable[[], QuestionSash] = DEFAULT_QUESTION_SASH_PROVIDER,
+    sash: (
+        QuestionSash | None | Callable[[], QuestionSash]
+    ) = DEFAULT_QUESTION_SASH_PROVIDER,
     region: Region | Callable[[], Region] = DEFAULT_QUESTION_REGION_PROVIDER,
     display_order: int | Callable[[], int] = DEFAULT_QUESTION_DISPLAY_ORDER_RESOLVER,
     tabs: Callable[[Question], list[QuestionTab]] = DEFAULT_QUESTION_TABS_PROVIDER,
-    published_state=PublishedState.PUBLISHED,
-    basemaps: list[BasemapSource] | Callable[[], list[BasemapSource]] = DEFAULT_BASEMAP_SOURCE_PROVIDER,
+    channels: list[Channel] | Callable[[], list[Channel]] = DEFAULT_CHANNELS_PROVIDER,
+    basemaps: (
+        list[BasemapSource] | Callable[[], list[BasemapSource]]
+    ) = DEFAULT_BASEMAP_SOURCE_PROVIDER,
 ) -> Question:
-    initiatives = initiatives if not isinstance(initiatives, Callable) else initiatives()
+    initiatives = (
+        initiatives if not isinstance(initiatives, Callable) else initiatives()
+    )
     slug = slug if not isinstance(slug, Callable) else slug()
     sash = sash if not isinstance(sash, Callable) else sash()
     region = region if not isinstance(region, Callable) else region()
-    display_order = display_order if not isinstance(display_order, Callable) else display_order()
+    display_order = (
+        display_order if not isinstance(display_order, Callable) else display_order()
+    )
     basemaps = basemaps if not isinstance(basemaps, Callable) else basemaps()
+    channels = channels if not isinstance(channels, Callable) else channels()
     question = Question.objects.create(
         title=title,
         subtitle=subtitle,
@@ -592,13 +660,18 @@ def create_test_question(
         sash=sash,
         region=region,
         display_order=display_order,
-        published_state=published_state,
     )
     # tabs can only be created in relation to a question
     tabs(question)
+    # channels must be set like this because they are a many-to-many field
+    question.channels.set(channels)
     # initiatives must be set like this because they are a many-to-many field
     question.initiatives.set(initiatives)
-    layer_groups = layer_groups if not isinstance(layer_groups, Callable) else layer_groups(question)
+    layer_groups = (
+        layer_groups
+        if not isinstance(layer_groups, Callable)
+        else layer_groups(question)
+    )
     question.layer_groups.set(layer_groups)  # type: ignore
     # basemaps must be set like this because they are a many-to-many field
     # implemented using a through-table.
@@ -624,7 +697,7 @@ def get_initiative_dict(initiative: Initiative) -> dict:
         "image": str(initiative.image),
         "content": str(initiative.content),
         "tags": [str(x.name) for x in initiative.tags.all()],
-        "published_state": str(initiative.published_state),
+        "channels": [str(x.name) for x in initiative.channels.all()],
     }
 
 
@@ -654,7 +727,7 @@ def get_layer_dict(layer: Layer) -> dict:
             "provider_state": str(layer.map_data.provider_state),
         },
         # style data omitted for now...
-        "published_state": str(layer.published_state),
+        "channels": [str(x.name) for x in layer.channels.all()],
     }
 
 
@@ -713,7 +786,7 @@ def get_question_dict(question: Question) -> dict:
             for x in BasemapSourceOnQuestion.objects.filter(question=question)
         ],
         "display_order": int(question.display_order),
-        "published_state": str(question.published_state),
+        "channels": [str(x.name) for x in question.channels.all()],
     }
 
 

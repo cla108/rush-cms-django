@@ -4,7 +4,6 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
-from rush.models import PublishedState
 from rush.models.utils import CompressionFailed, compress_image
 from rush.models.validators import FiletypeValidator
 
@@ -47,11 +46,17 @@ class Question(models.Model):
         help_text="Primary region where this question appears",
         related_name="questions",
     )
-    display_order = models.PositiveIntegerField(default=0, blank=False, null=False, db_index=True, editable=True)
-    published_state = models.CharField(
-        max_length=255,
-        choices=PublishedState.choices,
-        help_text="WARNING: Changing this to 'Published' will make this Question appear on the website immediately.",
+    display_order = models.PositiveIntegerField(
+        default=0, blank=False, null=False, db_index=True, editable=True
+    )
+    channels = models.ManyToManyField(
+        to="Channel",
+        related_name="questions",
+        blank=True,
+        help_text=(
+            "WARNING: Tagging this Question onto the 'published' channel will make it appear on the live website "
+            "immediately. Leave this empty and the Question will be tagged onto the default channel on save."
+        ),
     )
 
     def __str__(self):

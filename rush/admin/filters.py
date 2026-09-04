@@ -1,24 +1,24 @@
 from django.contrib.admin import SimpleListFilter
 
-from rush.models import PublishedState
+from rush.models import Channel
 
 
-class PublishedStateFilter(SimpleListFilter):
+class ChannelFilter(SimpleListFilter):
     """
-    An admin filter for models with a "published_state" field.
+    An admin filter for models tagged onto channels. Defaults to showing every channel, so that
+    editors never lose track of content that isn't on the channel they happen to be looking at.
     """
 
-    # You need to edit the ordering of `lookups` if you change this default
-    DEFAULT = PublishedState.PUBLISHED.value
-
-    title = "Site Visibility"
-    parameter_name = "published_state"
+    title = "Channel"
+    parameter_name = "channel"
 
     def lookups(self, request, model_admin):  # type: ignore
         return (
-            (None, "Published"),
-            ("draft", "Draft"),
-            ("all", "All"),
+            (None, "All"),
+            *(
+                (channel.name, channel.name.capitalize())
+                for channel in Channel.objects.all()
+            ),
         )
 
     def choices(self, cl):  # type: ignore
@@ -35,11 +35,9 @@ class PublishedStateFilter(SimpleListFilter):
             }
 
     def queryset(self, request, queryset):
-        if self.value() == None:
-            return queryset.filter(published_state=self.DEFAULT)
-        elif self.value() in PublishedState.values:
-            return queryset.filter(published_state=self.value())
-        elif self.value() == "all":
+        if self.value() is None or self.value() == "all":
             return queryset
+        elif Channel.objects.filter(name=self.value()).exists():
+            return queryset.filter(channels__name=self.value())
         else:
-            raise ValueError(f"Unknown published-state: {self.value()}")
+            raise ValueError(f"Unknown channel: {self.value()}")

@@ -10,14 +10,18 @@ def forward_move_geojson_field_data_to_geojson_provider_model(apps, schema_edito
     Any existing GeoJson data in the MapData object needs to move into the GeoJsonProvider
     model which will now be related to MapData as a foreign-key.
     """
-    print("\nStarting MapData geojson forward migration to the GeoJsonProvider model...")
+    print(
+        "\nStarting MapData geojson forward migration to the GeoJsonProvider model..."
+    )
     MapData = apps.get_model("rush", "MapData")
     GeoJsonProvider = apps.get_model("rush", "GeoJsonProvider")
     for map_data in MapData.objects.all():
         data = map_data.geojson
         provider = map_data.provider
         if provider == "geojson":
-            print(f"Migrating <MapData {map_data.id}> geojson field to GeoJsonProvider model...")
+            print(
+                f"Migrating <MapData {map_data.id}> geojson field to GeoJsonProvider model..."
+            )
             if data is None:
                 print(
                     f"WARNING: Deleting <MapData {map_data.id}> because it has a GeoJson provider but no geojson data!"
@@ -28,7 +32,9 @@ def forward_move_geojson_field_data_to_geojson_provider_model(apps, schema_edito
             map_data.full_clean()
             map_data.save()
         else:
-            print(f"Skipping <MapData {map_data.id}> because it's provider is {provider}...")
+            print(
+                f"Skipping <MapData {map_data.id}> because it's provider is {provider}..."
+            )
     print("Finished MapData geojson forward migration to the GeoJsonProvider model!")
 
 
@@ -36,12 +42,16 @@ def reverse_move_geojson_provider_data_to_geojson_field(apps, schema_editor):
     """
     Reverse migration will put back any data from GeoJsonProvider into MapData's geojson field.
     """
-    print("\nStarting MapData reverse migration from the GeoJsonProvider model to geojson field...")
+    print(
+        "\nStarting MapData reverse migration from the GeoJsonProvider model to geojson field..."
+    )
     MapData = apps.get_model("rush", "MapData")
     for map_data in MapData.objects.all():
         provider = map_data.provider
         if provider == "geojson":
-            print(f"Migrating <MapData {map_data.id}> GeoJsonProvider model backwards to geojson field ...")
+            print(
+                f"Migrating <MapData {map_data.id}> GeoJsonProvider model backwards to geojson field ..."
+            )
             if map_data.geojson_provider.geojson is None:
                 print(
                     f"WARNING: Skipping <MapData {map_data.id}> because it has a GEOJSON provider selected but the foreign key object's geojson field is None!"
@@ -55,8 +65,12 @@ def reverse_move_geojson_provider_data_to_geojson_field(apps, schema_editor):
             map_data.full_clean()
             map_data.save()
         else:
-            print(f"Skipping <MapData {map_data.id}> because it's provider is {provider}...")
-    print("Finished MapData reverse migration from the GeoJsonProvider model to geojson field!")
+            print(
+                f"Skipping <MapData {map_data.id}> because it's provider is {provider}..."
+            )
+    print(
+        "Finished MapData reverse migration from the GeoJsonProvider model to geojson field!"
+    )
 
 
 class Migration(migrations.Migration):

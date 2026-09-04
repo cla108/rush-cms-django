@@ -21,7 +21,11 @@ from decouple import config
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("DJANGO_SECRET_KEY", cast=str)
 DEBUG = config("DJANGO_DEBUG", cast=bool)
-ALLOWED_HOSTS = [host for host in str(config("DJANGO_ALLOWED_HOSTS", cast=str)).split(",") if host != ""]
+ALLOWED_HOSTS = [
+    host
+    for host in str(config("DJANGO_ALLOWED_HOSTS", cast=str)).split(",")
+    if host != ""
+]
 MEDIA_ROOT = config("DJANGO_MEDIA_ROOT", cast=str)
 STATIC_ROOT = config("DJANGO_STATIC_ROOT", cast=str)
 GDAL_LIBRARY_PATH = config("GDAL_LIBRARY_PATH", cast=str)
@@ -139,7 +143,10 @@ MIDDLEWARE = [
 
 ENABLE_SILK_PROFILING = config("ENABLE_SILK_PROFILING", cast=bool)
 if ENABLE_SILK_PROFILING:
-    MIDDLEWARE = ["silk.middleware.SilkyMiddleware", *MIDDLEWARE]  # Add silk middleware at beginning
+    MIDDLEWARE = [
+        "silk.middleware.SilkyMiddleware",
+        *MIDDLEWARE,
+    ]  # Add silk middleware at beginning
     SILKY_PYTHON_PROFILER = True  # enables Python-level profiling
     SILKY_PYTHON_PROFILER_BINARY = False  # False = more readable text output
     SILKY_PYTHON_PROFILER_RESULT_PATH = BASE_DIR / "profiles"  # Save profiles to disk
@@ -147,7 +154,9 @@ if ENABLE_SILK_PROFILING:
 
     # Control what gets profiled
     SILKY_INTERCEPT_PERCENT = 100  # Profile 100% of requests (default is 100)
-    SILKY_MAX_RECORDED_REQUESTS = 100  # Limit history to prevent memory accumulation (was 10000)
+    SILKY_MAX_RECORDED_REQUESTS = (
+        100  # Limit history to prevent memory accumulation (was 10000)
+    )
     SILKY_MAX_RECORDED_REQUESTS_CHECK_PERCENT = 10  # How often to check
 
     # More detailed profiling
@@ -250,12 +259,28 @@ LEAFLET_CONFIG = {
 
 # CORS configuration
 CORS_ORIGIN_ALLOW_ALL = DEBUG  # Development
-CORS_ALLOWED_ORIGINS = [x for x in str(config("DJANGO_ALLOWED_ORIGINS", cast=str)).split(",") if x != ""]
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    x for x in str(config("DJANGO_ALLOWED_ORIGIN_REGEXES", cast=str)).split(",") if x != ""
+CORS_ALLOWED_ORIGINS = [
+    x for x in str(config("DJANGO_ALLOWED_ORIGINS", cast=str)).split(",") if x != ""
 ]
-CSRF_TRUSTED_ORIGINS = [x for x in str(config("DJANGO_CSRF_TRUSTED_ORIGINS", cast=str)).split(",") if x != ""]
-X_FRAME_OPTIONS = "SAMEORIGIN"  # Need cross-origin here for Summernote X-frame injection
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    x
+    for x in str(config("DJANGO_ALLOWED_ORIGIN_REGEXES", cast=str)).split(",")
+    if x != ""
+]
+CSRF_TRUSTED_ORIGINS = [
+    x
+    for x in str(config("DJANGO_CSRF_TRUSTED_ORIGINS", cast=str)).split(",")
+    if x != ""
+]
+X_FRAME_OPTIONS = (
+    "SAMEORIGIN"  # Need cross-origin here for Summernote X-frame injection
+)
+
+# The public website that serves content from this CMS. Used by the admin-site to build
+# channel preview links, e.g., "https://whatstherush.earth/?channel=published".
+FRONTEND_BASE_URL = str(
+    config("DJANGO_FRONTEND_BASE_URL", cast=str, default="")
+).rstrip("/")
 
 
 # Backblaze configuration for raster images

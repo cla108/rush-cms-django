@@ -13,6 +13,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="question",
             name="basemaps",
-            field=models.ManyToManyField(related_name="questions", to="rush.basemapsource"),
+            field=models.ManyToManyField(
+                related_name="questions", to="rush.basemapsource"
+            ),
         ),
     ]

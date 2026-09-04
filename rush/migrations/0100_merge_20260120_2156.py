@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0096_alter_layer_legendtitle'),
-        ('rush', '0099_alter_layergrouponquestion_group_description'),
+        ("rush", "0096_alter_layer_legendtitle"),
+        ("rush", "0099_alter_layergrouponquestion_group_description"),
     ]
 
-    operations = [
-    ]
+    operations = []

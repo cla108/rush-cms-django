@@ -6,7 +6,9 @@ from rush.admin.utils import SuperuserStrictCleanMixin
 from rush.models import QuestionTab
 
 
-class QuestionTabInline(SuperuserStrictCleanMixin, SortableTabularInline, TabularInline):
+class QuestionTabInline(
+    SuperuserStrictCleanMixin, SortableTabularInline, TabularInline
+):
     """
     Allow editing of QuestionTab objects straight from the Question form.
     """

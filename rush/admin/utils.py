@@ -1,12 +1,16 @@
 from decimal import Decimal, InvalidOperation
 from enum import Enum
-from typing import Any
+from typing import Any, Iterable
+from urllib.parse import urlencode
 
 from django import forms
+from django.conf import settings
 from django.contrib import admin
 from django.db import models
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.safestring import SafeString, SafeText, mark_safe
+
+from rush.models import Channel
 
 
 class SuperuserStrictCleanMixin:
@@ -20,6 +24,51 @@ class SuperuserStrictCleanMixin:
         if not request.user.is_superuser:
             fields = [f for f in fields if not f.endswith("_strict_clean")]
         return fields
+
+
+def channel_url(channel: Channel) -> str:
+    """
+    The public website URL that serves the given channel's content.
+    """
+    return "{base}/?{query}".format(
+        base=settings.FRONTEND_BASE_URL,
+        query=urlencode({"channel": channel.name}),
+    )
+
+
+def channel_links_html(channels: Iterable[Channel]) -> SafeString | str:
+    """
+    Render channels as links to the public website, so that editors can jump straight to what
+    a channel's content looks like to a visitor.
+    """
+    links = format_html_join(
+        ", ",
+        '<a href="{}" target="_blank" rel="noopener">{}</a>',
+        ((channel_url(channel), channel.name) for channel in channels),
+    )
+    return links or "-"
+
+
+class DefaultChannelMixin:
+    """
+    Mixin for ModelAdmin classes whose model is tagged onto channels. New content starts out on the
+    default create channel, and content saved without any channel at all falls back to it, so that
+    nothing can end up invisible on every channel.
+    """
+
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)  # type: ignore
+        if "channels" not in initial:
+            # Pre-select the channel on the "add" form so that the author can see where the
+            # content is about to land, and move it somewhere else before saving.
+            initial["channels"] = [Channel.objects.default_create_channel().pk]
+        return initial
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)  # type: ignore
+        instance = form.instance
+        if not instance.channels.exists():
+            instance.channels.set([Channel.objects.default_create_channel()])
 
 
 def get_decimal(obj: Any) -> Decimal:

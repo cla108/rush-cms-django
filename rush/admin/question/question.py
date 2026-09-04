@@ -6,20 +6,20 @@ from django.http import HttpResponseRedirect
 from django.utils.safestring import mark_safe
 from nested_admin.nested import NestedModelAdmin
 
-from rush.admin import PublishedStateFilter
+from rush.admin import ChannelFilter
 from rush.admin.question.forms import QuestionForm
 from rush.admin.question.inlines import (
     BasemapSourceOnQuestionInline,
     LayerGroupOnQuestionInline,
     QuestionTabInline,
 )
-from rush.admin.utils import image_html
+from rush.admin.utils import DefaultChannelMixin, channel_links_html, image_html
 from rush.models import BasemapSource, BasemapSourceOnQuestion, Question
 from rush.models.duplicators import QuestionDuplicator
 
 
 @admin.register(Question)
-class QuestionAdmin(SortableAdminMixin, NestedModelAdmin):  # type: ignore
+class QuestionAdmin(DefaultChannelMixin, SortableAdminMixin, NestedModelAdmin):  # type: ignore
     form = QuestionForm
     exclude = ["id"]
     list_display = [
@@ -29,23 +29,25 @@ class QuestionAdmin(SortableAdminMixin, NestedModelAdmin):  # type: ignore
         "sash_preview",
         "get_question_tabs",
         "display_order",
-        "site_visibility",
+        "channels_preview",
     ]
-    list_filter = [PublishedStateFilter]
+    list_filter = [ChannelFilter]
     prepopulated_fields = {"slug": ("title",)}
-    autocomplete_fields = ["initiatives", "sash"]
+    autocomplete_fields = ["initiatives", "sash", "channels"]
     inlines = [
         BasemapSourceOnQuestionInline,
         QuestionTabInline,
         LayerGroupOnQuestionInline,
     ]
     actions = ["duplicate_object"]
-    sortable_field_name = "display_order"  # Enable drag-and-drop for Questions in the list view
+    sortable_field_name = (
+        "display_order"  # Enable drag-and-drop for Questions in the list view
+    )
     # filter_horizontal = ["initiatives"]  # better admin editing for many-to-many fields
 
-    @admin.display(description="Site Visibility")
-    def site_visibility(self, obj: Question):
-        return obj.published_state
+    @admin.display(description="Channels")
+    def channels_preview(self, obj: Question):
+        return channel_links_html(obj.channels.all())
 
     @admin.display(description="Sash")
     def sash_preview(self, obj: Question):
@@ -73,15 +75,17 @@ class QuestionAdmin(SortableAdminMixin, NestedModelAdmin):  # type: ignore
         Optimize queryset to prevent loading massive JSONFields from related Layer objects.
         """
         qs = super().get_queryset(request)
-        # Prefetch question tabs to avoid N+1 queries in get_question_tabs() display method
-        return qs.prefetch_related("tabs")
+        # Prefetch question tabs/channels to avoid N+1 queries in the display methods
+        return qs.prefetch_related("tabs", "channels")
 
     @admin.action(description="Duplicate selected items")
     def duplicate_object(self, request, queryset):
         for obj in queryset:
             QuestionDuplicator(obj).duplicate()
-        self.message_user(request, f"Successfully duplicated {queryset.count()} item(s).")
-        return HttpResponseRedirect("?published_state=all")
+        self.message_user(
+            request, f"Successfully duplicated {queryset.count()} item(s)."
+        )
+        return HttpResponseRedirect("?channel=all")
 
     def save_related(self, request, form, formsets, change):
         """

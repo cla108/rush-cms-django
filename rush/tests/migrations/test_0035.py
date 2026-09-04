@@ -8,7 +8,9 @@ from rush.models.layer import Layer
 from rush.models.map_data import MapData
 
 # Import the migration module (can't import normally because it starts with a number...)
-migration_module = importlib.import_module("rush.migrations.0035_migrate_domain_url_in_serialized_leaflet_json")
+migration_module = importlib.import_module(
+    "rush.migrations.0035_migrate_domain_url_in_serialized_leaflet_json"
+)
 populate_new_domain = migration_module.populate_new_domain
 
 
@@ -36,7 +38,9 @@ def test_populate_new_domain(before_json, after_json):
     """
     Test that the migration function correctly updates domain URLs in serialized_leaflet_json.
     """
-    map_data = MapData.objects.create(name="Test MapData", provider_state=MapData.ProviderState.GEOJSON)
+    map_data = MapData.objects.create(
+        name="Test MapData", provider_state=MapData.ProviderState.GEOJSON
+    )
     layer = Layer.objects.create(
         name="Test Layer",
         description="A test layer",
@@ -44,7 +48,9 @@ def test_populate_new_domain(before_json, after_json):
         serialized_leaflet_json=before_json,
     )
     executor = MigrationExecutor(connection)
-    apps = executor.loader.project_state([("rush", "0035_migrate_domain_url_in_serialized_leaflet_json")]).apps
+    apps = executor.loader.project_state(
+        [("rush", "0035_migrate_domain_url_in_serialized_leaflet_json")]
+    ).apps
     populate_new_domain(apps, None)
     layer.refresh_from_db()
     assert layer.serialized_leaflet_json == after_json
