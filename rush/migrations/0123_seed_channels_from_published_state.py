@@ -24,10 +24,15 @@ def seed_channels_from_published_state(apps, schema_editor):
     for name, description in CHANNELS.items():
         Channel.objects.get_or_create(
             name=name,
-            defaults={"id": uuid.uuid4(), "description": description, "is_private": False},
+            defaults={
+                "id": uuid.uuid4(),
+                "description": description,
+            },
         )
 
-    channels_by_published_state = {name: Channel.objects.get(name=name) for name in CHANNELS}
+    channels_by_published_state = {
+        name: Channel.objects.get(name=name) for name in CHANNELS
+    }
     for model_name in TAGGED_MODELS:
         model = apps.get_model("rush", model_name)
         for instance in model.objects.all():
@@ -58,5 +63,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(seed_channels_from_published_state, reverse_code=unseed_channels_to_published_state),
+        migrations.RunPython(
+            seed_channels_from_published_state,
+            reverse_code=unseed_channels_to_published_state,
+        ),
     ]

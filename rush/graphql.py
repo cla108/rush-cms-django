@@ -61,7 +61,10 @@ def convert_relative_links_to_absolute(html: str, base_media_url: str) -> str:
                     link = link.replace("//", base_media_url, 1)
                 elif link.startswith(base_media_domain):
                     # e.g., src = "admin.whatstherush.earth/example.png".
-                    link = urljoin(base_media_url, link.replace(base_media_domain, "", 1).lstrip("/"))
+                    link = urljoin(
+                        base_media_url,
+                        link.replace(base_media_domain, "", 1).lstrip("/"),
+                    )
                 elif "." in link.split("/")[0]:
                     if MimeType.guess(link.split("/")[0]).guessed.is_valid:
                         # NOTE: This uses mime-type model to differentiate between a domain and a supported filetype.
@@ -69,7 +72,7 @@ def convert_relative_links_to_absolute(html: str, base_media_url: str) -> str:
                         link = urljoin(base_media_url, link)
                     else:
                         # e.g., src = "google.com/example.png".
-                        link = f"https://www.{link.lstrip("/")}"
+                        link = f"https://www.{link.lstrip(" / ")}"
                 else:
                     # internal resource location with trailing slash
                     # e.g., src = "/example.png".
@@ -95,7 +98,6 @@ class ChannelType(DjangoObjectType):
             "id",
             "name",
             "description",
-            "is_private",
         ]
 
 
@@ -112,7 +114,9 @@ CHANNELS_ARG = graphene.List(
 )
 
 
-def scope_request_to_channels(info: ResolveInfo, channels: list[str] | None) -> list[models.Channel]:
+def scope_request_to_channels(
+    info: ResolveInfo, channels: list[str] | None
+) -> list[models.Channel]:
     """
     Resolve the channels a request is scoped to and stash them on the request context so that
     nested resolvers filter by the same channels as the root query they were reached through.
@@ -124,7 +128,9 @@ def scope_request_to_channels(info: ResolveInfo, channels: list[str] | None) -> 
 
     unknown = [name for name in channel_names if name not in resolved_by_name]
     if unknown:
-        raise GraphQLError("Unknown channel(s): {}.".format(", ".join(f"'{name}'" for name in unknown)))
+        raise GraphQLError(
+            "Unknown channel(s): {}.".format(", ".join(f"'{name}'" for name in unknown))
+        )
 
     info.context.channels = [resolved_by_name[name] for name in channel_names]
     return info.context.channels
@@ -163,19 +169,25 @@ class MapDataType(DjangoObjectType):
 
     def resolve_map_link(self, info):
         if not isinstance(self, models.MapData):
-            raise ValueError("Expected object to be of type MapData when resolving query.")
+            raise ValueError(
+                "Expected object to be of type MapData when resolving query."
+            )
         # LOG TODO: Log a warning here. This should be deprecated and I wanna make sure it's no longer being used when I delete it.
         return self.map_link
 
     def resolve_campaign_link(self, info):
         if not isinstance(self, models.MapData):
-            raise ValueError("Expected object to be of type MapData when resolving query.")
+            raise ValueError(
+                "Expected object to be of type MapData when resolving query."
+            )
         # LOG TODO: Log a warning here. This should be deprecated and I wanna make sure it's no longer being used when I delete it.
         return self.campaign_link
 
     def resolve_geojson(self, info):
         if not isinstance(self, models.MapData):
-            raise ValueError("Expected object to be of type MapData when resolving query.")
+            raise ValueError(
+                "Expected object to be of type MapData when resolving query."
+            )
         return self.geojson
 
     def resolve_geotiff_link(self, info):
@@ -197,14 +209,18 @@ class MapDataType(DjangoObjectType):
         raise ValueError(f"{self.map_link} didn't match the expected map_link regex.")
 
     def resolve_ogm_campaign_id(self, info):
-        if not isinstance(self, models.MapData) or not isinstance(self.campaign_link, str):
+        if not isinstance(self, models.MapData) or not isinstance(
+            self.campaign_link, str
+        ):
             return None
         for regex in [OGM_CAMPAIGN_RE]:
             m = regex.match(self.campaign_link)
             if m:
                 return m.group("id")
         # LOG TODO: Log error here...
-        raise ValueError(f"{self.campaign_link} didn't match the expected campaign_link regex.")
+        raise ValueError(
+            f"{self.campaign_link} didn't match the expected campaign_link regex."
+        )
 
 
 class MapDataWithoutGeoJsonType(DjangoObjectType):
@@ -237,14 +253,18 @@ class MapDataWithoutGeoJsonType(DjangoObjectType):
         raise ValueError(f"{self.map_link} didn't match the expected map_link regex.")
 
     def resolve_ogm_campaign_id(self, info):
-        if not isinstance(self, models.MapData) or not isinstance(self.campaign_link, str):
+        if not isinstance(self, models.MapData) or not isinstance(
+            self.campaign_link, str
+        ):
             return None
         for regex in [OGM_CAMPAIGN_RE]:
             m = regex.match(self.campaign_link)
             if m:
                 return m.group("id")
         # LOG TODO: Log error here...
-        raise ValueError(f"{self.campaign_link} didn't match the expected campaign_link regex.")
+        raise ValueError(
+            f"{self.campaign_link} didn't match the expected campaign_link regex."
+        )
 
 
 class StylesOnLayersType(DjangoObjectType):
@@ -262,14 +282,20 @@ class StylesOnLayersType(DjangoObjectType):
 
     def resolve_legend_description(self, info) -> str:
         if not isinstance(self, models.StylesOnLayer):
-            raise ValueError("Expected object to be of type StylesOnLayer when resolving query.")
+            raise ValueError(
+                "Expected object to be of type StylesOnLayer when resolving query."
+            )
         if not isinstance(self.legend_description, str):
             # Not sure why but the linter thinks self.content here is potentially
             # graphene.String() when the same code works for MapData.geojson.
-            raise ValueError("Expected StylesOnLayer.legend_description to be of type string at runtime.")
+            raise ValueError(
+                "Expected StylesOnLayer.legend_description to be of type string at runtime."
+            )
 
         base_media_url = base_url_from_request(info.context)
-        return convert_relative_links_to_absolute(html=self.legend_description, base_media_url=base_media_url)
+        return convert_relative_links_to_absolute(
+            html=self.legend_description, base_media_url=base_media_url
+        )
 
 
 class StyleType(DjangoObjectType):
@@ -342,25 +368,37 @@ class LayerType(DjangoObjectType):
 
     def resolve_description(self, info) -> str:
         if not isinstance(self, models.Layer):
-            raise ValueError("Expected object to be of type Layer when resolving query.")
+            raise ValueError(
+                "Expected object to be of type Layer when resolving query."
+            )
         if not isinstance(self.description, str):
             # Not sure why but the linter thinks self.content here is potentially
             # graphene.String() when the same code works for MapData.geojson.
-            raise ValueError("Expected Layer.description to be of type string at runtime.")
+            raise ValueError(
+                "Expected Layer.description to be of type string at runtime."
+            )
 
         base_media_url = base_url_from_request(info.context)
-        return convert_relative_links_to_absolute(html=self.description, base_media_url=base_media_url)
+        return convert_relative_links_to_absolute(
+            html=self.description, base_media_url=base_media_url
+        )
 
     serialized_leaflet_json = graphene.String()
 
     def resolve_serialized_leaflet_json(self, info) -> str:
-        with log_execution_time_with_result("resolve_serialized_leaflet_json", log_level=logging.DEBUG) as result:
+        with log_execution_time_with_result(
+            "resolve_serialized_leaflet_json", log_level=logging.DEBUG
+        ) as result:
             if not isinstance(self, models.Layer):
-                raise ValueError("Expected object to be of type Layer when resolving query.")
+                raise ValueError(
+                    "Expected object to be of type Layer when resolving query."
+                )
             if not isinstance(self.serialized_leaflet_json, dict):
                 # Not sure why but the linter thinks self.serialized_leaflet_json here is potentially
                 # graphene.String() when the same code works for MapData.geojson.
-                raise ValueError("Expected Layer.serialized_leaflet_json to be of type dict at runtime.")
+                raise ValueError(
+                    "Expected Layer.serialized_leaflet_json to be of type dict at runtime."
+                )
 
             result["layer_id"] = self.id
             result["layer_name"] = self.name
@@ -374,7 +412,10 @@ class LayerType(DjangoObjectType):
             for feature in data_obj["featureCollection"]["features"]:
                 if "properties" in feature:
                     properties = feature["properties"]
-                    if "__popupHTML" in properties and properties["__popupHTML"] is not None:
+                    if (
+                        "__popupHTML" in properties
+                        and properties["__popupHTML"] is not None
+                    ):
                         properties["__popupHTML"] = convert_relative_links_to_absolute(
                             html=properties["__popupHTML"],
                             base_media_url=base_media_url,
@@ -384,9 +425,11 @@ class LayerType(DjangoObjectType):
                         and "html" in properties["__pointDivIconStyleProps"]
                         and properties["__pointDivIconStyleProps"]["html"] is not None
                     ):
-                        properties["__pointDivIconStyleProps"]["html"] = convert_relative_links_to_absolute(
-                            html=properties["__pointDivIconStyleProps"]["html"],
-                            base_media_url=base_media_url,
+                        properties["__pointDivIconStyleProps"]["html"] = (
+                            convert_relative_links_to_absolute(
+                                html=properties["__pointDivIconStyleProps"]["html"],
+                                base_media_url=base_media_url,
+                            )
                         )
             return json.dumps(data_obj)
 
@@ -412,14 +455,20 @@ class LayerTypeWithoutSerializedLeafletJSON(DjangoObjectType):
 
     def resolve_description(self, info) -> str:
         if not isinstance(self, models.Layer):
-            raise ValueError("Expected object to be of type Layer when resolving query.")
+            raise ValueError(
+                "Expected object to be of type Layer when resolving query."
+            )
         if not isinstance(self.description, str):
             # Not sure why but the linter thinks self.content here is potentially
             # graphene.String() when the same code works for MapData.geojson.
-            raise ValueError("Expected Layer.description to be of type string at runtime.")
+            raise ValueError(
+                "Expected Layer.description to be of type string at runtime."
+            )
 
         base_media_url = base_url_from_request(info.context)
-        return convert_relative_links_to_absolute(html=self.description, base_media_url=base_media_url)
+        return convert_relative_links_to_absolute(
+            html=self.description, base_media_url=base_media_url
+        )
 
 
 class LayerOnLayerGroupType(DjangoObjectType):
@@ -452,14 +501,20 @@ class LayerGroupOnQuestionType(DjangoObjectType):
 
     def resolve_group_description(self, info) -> str:
         if not isinstance(self, models.LayerGroupOnQuestion):
-            raise ValueError("Expected object to be of type LayerGroupOnQuestion when resolving query.")
+            raise ValueError(
+                "Expected object to be of type LayerGroupOnQuestion when resolving query."
+            )
         if not isinstance(self.group_description, str):
             # Not sure why but the linter thinks self.group_description here is potentially
             # graphene.String() when the same code works for MapData.geojson.
-            raise ValueError("Expected page.group_description to be of type string at runtime.")
+            raise ValueError(
+                "Expected page.group_description to be of type string at runtime."
+            )
 
         base_media_url = base_url_from_request(info.context)
-        return convert_relative_links_to_absolute(html=self.group_description, base_media_url=base_media_url)
+        return convert_relative_links_to_absolute(
+            html=self.group_description, base_media_url=base_media_url
+        )
 
     layers_on_layer_group = graphene.List(LayerOnLayerGroupType)
 
@@ -511,14 +566,20 @@ class QuestionTabType(DjangoObjectType):
 
     def resolve_content(self, info) -> str:
         if not isinstance(self, models.QuestionTab):
-            raise ValueError("Expected object to be of type QuestionTab when resolving query.")
+            raise ValueError(
+                "Expected object to be of type QuestionTab when resolving query."
+            )
         if not isinstance(self.content, str):
             # Not sure why but the linter thinks self.content here is potentially
             # graphene.String() when the same code works for MapData.geojson.
-            raise ValueError("Expected QuestionTab.content to be of type string at runtime.")
+            raise ValueError(
+                "Expected QuestionTab.content to be of type string at runtime."
+            )
 
         base_media_url = base_url_from_request(info.context)
-        return convert_relative_links_to_absolute(html=self.content, base_media_url=base_media_url)
+        return convert_relative_links_to_absolute(
+            html=self.content, base_media_url=base_media_url
+        )
 
 
 class InitiativeTagType(DjangoObjectType):
@@ -544,14 +605,20 @@ class InitiativeType(DjangoObjectType):
 
     def resolve_content(self, info) -> str:
         if not isinstance(self, models.Initiative):
-            raise ValueError("Expected object to be of type Initiative when resolving query.")
+            raise ValueError(
+                "Expected object to be of type Initiative when resolving query."
+            )
         if not isinstance(self.content, str):
             # Not sure why but the linter thinks self.content here is potentially
             # graphene.String() when the same code works for MapData.geojson.
-            raise ValueError("Expected initiative.content to be of type string at runtime.")
+            raise ValueError(
+                "Expected initiative.content to be of type string at runtime."
+            )
 
         base_media_url = base_url_from_request(info.context)
-        return convert_relative_links_to_absolute(html=self.content, base_media_url=base_media_url)
+        return convert_relative_links_to_absolute(
+            html=self.content, base_media_url=base_media_url
+        )
 
 
 class QuestionSashType(DjangoObjectType):
@@ -624,12 +691,20 @@ class QuestionType(DjangoObjectType):
         return models.BasemapSourceOnQuestion.objects.filter(question=self)
 
     def resolve_initiatives(self, info):
-        return models.Initiative.objects.filter(channels__in=request_channels(info), question=self).distinct()
+        return models.Initiative.objects.filter(
+            channels__in=request_channels(info), question=self
+        ).distinct()
 
     num_initiatives = graphene.Int()
 
     def resolve_num_initiatives(self, info):
-        return models.Initiative.objects.filter(channels__in=request_channels(info), question=self).distinct().count()
+        return (
+            models.Initiative.objects.filter(
+                channels__in=request_channels(info), question=self
+            )
+            .distinct()
+            .count()
+        )
 
 
 class PageType(DjangoObjectType):
@@ -653,7 +728,9 @@ class PageType(DjangoObjectType):
             raise ValueError("Expected page.content to be of type string at runtime.")
 
         base_media_url = base_url_from_request(info.context)
-        return convert_relative_links_to_absolute(html=self.content, base_media_url=base_media_url)
+        return convert_relative_links_to_absolute(
+            html=self.content, base_media_url=base_media_url
+        )
 
 
 def get_requested_fields(info: ResolveInfo) -> List[str]:
@@ -728,15 +805,20 @@ class Query(graphene.ObjectType):
 
     base_admin_url = graphene.Field(graphene.String)
 
-    all_channels = graphene.List(ChannelType)
-    channel = graphene.Field(ChannelType, name=graphene.String(required=True))
-
-    layer = graphene.Field(LayerType, id=graphene.UUID(required=True), channels=CHANNELS_ARG)
+    layer = graphene.Field(
+        LayerType, id=graphene.UUID(required=True), channels=CHANNELS_ARG
+    )
 
     all_questions = graphene.List(QuestionType, channels=CHANNELS_ARG)
-    question = graphene.Field(QuestionType, id=graphene.UUID(required=True), channels=CHANNELS_ARG)
-    question_by_slug = graphene.Field(QuestionType, slug=graphene.String(required=True), channels=CHANNELS_ARG)
-    question_tab_by_id = graphene.Field(QuestionTabType, id=graphene.UUID(required=True), channels=CHANNELS_ARG)
+    question = graphene.Field(
+        QuestionType, id=graphene.UUID(required=True), channels=CHANNELS_ARG
+    )
+    question_by_slug = graphene.Field(
+        QuestionType, slug=graphene.String(required=True), channels=CHANNELS_ARG
+    )
+    question_tab_by_id = graphene.Field(
+        QuestionTabType, id=graphene.UUID(required=True), channels=CHANNELS_ARG
+    )
     question_tab_by_slug = graphene.Field(
         QuestionTabType,
         question_slug=graphene.String(required=True),
@@ -751,10 +833,14 @@ class Query(graphene.ObjectType):
 
     all_map_datas = graphene.List(MapDataWithoutGeoJsonType)
     map_data = graphene.Field(MapDataType, id=graphene.UUID(required=True))
-    map_data_by_dropdown_name = graphene.Field(MapDataType, dropdownName=graphene.String(required=True))
+    map_data_by_dropdown_name = graphene.Field(
+        MapDataType, dropdownName=graphene.String(required=True)
+    )
 
     all_styles_on_layers = graphene.List(StylesOnLayersType)
-    styles_on_layer = graphene.Field(StylesOnLayersType, id=graphene.UUID(required=True))
+    styles_on_layer = graphene.Field(
+        StylesOnLayersType, id=graphene.UUID(required=True)
+    )
 
     all_styles = graphene.List(StyleType)
     style = graphene.Field(StyleType, id=graphene.UUID(required=True))
@@ -764,12 +850,6 @@ class Query(graphene.ObjectType):
 
     def resolve_base_admin_url(self, info):
         return base_url_from_request(info.context)
-
-    def resolve_all_channels(self, info):
-        return models.Channel.objects.all()
-
-    def resolve_channel(self, info, name: str):
-        return models.Channel.objects.filter(name=name).first()
 
     def resolve_layer(self, info, id, channels: list[str] | None = None):
         return (
@@ -781,13 +861,19 @@ class Query(graphene.ObjectType):
 
     def resolve_layer_group(self, info, question_id):
         return (
-            models.LayerGroupOnQuestion.objects.filter(layeronquestion__question__id=question_id)
+            models.LayerGroupOnQuestion.objects.filter(
+                layeronquestion__question__id=question_id
+            )
             .select_related("layer_on_layer_group")
             .distinct()
         )
 
     def resolve_all_questions(self, info, channels: list[str] | None = None):
-        return optimized_question_resolve_qs().filter(channels__in=scope_request_to_channels(info, channels)).distinct()
+        return (
+            optimized_question_resolve_qs()
+            .filter(channels__in=scope_request_to_channels(info, channels))
+            .distinct()
+        )
 
     def resolve_question(self, info, id, channels: list[str] | None = None):
         return (
@@ -797,15 +883,23 @@ class Query(graphene.ObjectType):
             .get(pk=id)
         )
 
-    def resolve_question_by_slug(self, info, slug: str, channels: list[str] | None = None):
+    def resolve_question_by_slug(
+        self, info, slug: str, channels: list[str] | None = None
+    ):
         return (
-            models.Question.objects.filter(channels__in=scope_request_to_channels(info, channels))
+            models.Question.objects.filter(
+                channels__in=scope_request_to_channels(info, channels)
+            )
             .distinct()
             .get(slug=slug)
         )
 
     def resolve_question_tab_by_slug(
-        self, info, question_slug: str, question_tab_slug: str, channels: list[str] | None = None
+        self,
+        info,
+        question_slug: str,
+        question_tab_slug: str,
+        channels: list[str] | None = None,
     ):
         return (
             models.QuestionTab.objects.filter(
@@ -817,7 +911,9 @@ class Query(graphene.ObjectType):
             .first()
         )
 
-    def resolve_default_question_tab(self, info, question_slug: str, channels: list[str] | None = None):
+    def resolve_default_question_tab(
+        self, info, question_slug: str, channels: list[str] | None = None
+    ):
         return (
             models.QuestionTab.objects.filter(
                 question__slug=question_slug,
@@ -866,4 +962,3 @@ class Query(graphene.ObjectType):
 
 def get_schema() -> graphene.Schema:
     return graphene.Schema(query=Query)
-

@@ -27,7 +27,9 @@ def migrated_back_to_0122():
 
 
 @pytest.mark.django_db(transaction=True)
-def test_0123_tags_content_onto_the_channel_matching_its_published_state(migrated_back_to_0122):
+def test_0123_tags_content_onto_the_channel_matching_its_published_state(
+    migrated_back_to_0122,
+):
     """
     Existing content should be tagged 1:1 onto the channel named after its old published-state.
     """
@@ -53,8 +55,13 @@ def test_0123_tags_content_onto_the_channel_matching_its_published_state(migrate
 
     from rush.models import Channel, Layer as CurrentLayer
 
-    assert set(Channel.objects.values_list("name", flat=True)) == {Channel.DRAFT_NAME, Channel.PUBLISHED_NAME}
-    assert [c.name for c in CurrentLayer.objects.get(pk=published_layer.pk).channels.all()] == [
-        Channel.PUBLISHED_NAME
-    ]
-    assert [c.name for c in CurrentLayer.objects.get(pk=draft_layer.pk).channels.all()] == [Channel.DRAFT_NAME]
+    assert set(Channel.objects.values_list("name", flat=True)) == {
+        Channel.DRAFT_NAME,
+        Channel.PUBLISHED_NAME,
+    }
+    assert [
+        c.name for c in CurrentLayer.objects.get(pk=published_layer.pk).channels.all()
+    ] == [Channel.PUBLISHED_NAME]
+    assert [
+        c.name for c in CurrentLayer.objects.get(pk=draft_layer.pk).channels.all()
+    ] == [Channel.DRAFT_NAME]

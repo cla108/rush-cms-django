@@ -8,18 +8,36 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0110_remove_question_questions'),
+        ("rush", "0110_remove_question_questions"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='mapdata',
-            name='arcgis_feature_server_link',
-            field=models.CharField(blank=True, max_length=2000, null=True, validators=[django.core.validators.URLValidator(schemes=['https']), rush.models.validators.validate_arcgis_feature_server_link]),
+            model_name="mapdata",
+            name="arcgis_feature_server_link",
+            field=models.CharField(
+                blank=True,
+                max_length=2000,
+                null=True,
+                validators=[
+                    django.core.validators.URLValidator(schemes=["https"]),
+                    rush.models.validators.validate_arcgis_feature_server_link,
+                ],
+            ),
         ),
         migrations.AlterField(
-            model_name='mapdata',
-            name='provider_state',
-            field=models.CharField(choices=[('unset', 'Unset'), ('geojson', 'Geojson'), ('geotiff', 'Geotiff'), ('open_green_map', 'Open Green Map'), ('arcgis_rest', 'Arcgis Rest')], default='unset', max_length=255),
+            model_name="mapdata",
+            name="provider_state",
+            field=models.CharField(
+                choices=[
+                    ("unset", "Unset"),
+                    ("geojson", "Geojson"),
+                    ("geotiff", "Geotiff"),
+                    ("open_green_map", "Open Green Map"),
+                    ("arcgis_rest", "Arcgis Rest"),
+                ],
+                default="unset",
+                max_length=255,
+            ),
         ),
     ]

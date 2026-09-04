@@ -1,5 +1,6 @@
 import requests
 
+
 def get_max_record_count(layer_url: str) -> int:
 
     metadata_url = f"{layer_url}?f=json"
@@ -15,13 +16,12 @@ def get_max_record_count(layer_url: str) -> int:
     return data["maxRecordCount"]
 
 
-
 def fetch_all_features(layer_url: str) -> dict:
 
     max_record_count = get_max_record_count(layer_url)
 
     offset = 0
-    all_features= []
+    all_features = []
 
     while True:
         query_url = (
@@ -44,9 +44,9 @@ def fetch_all_features(layer_url: str) -> dict:
 
         if len(features) < max_record_count:
             break
-        
+
         offset += max_record_count
-    
+
     return {
         "type": "FeatureCollection",
         "features": all_features,

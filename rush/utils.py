@@ -79,4 +79,6 @@ def log_execution_time_with_result(operation_name: str, log_level: int = logging
     finally:
         elapsed_time = time.time() - start_time
         extra_info = f" ({context})" if context else ""
-        logger.log(log_level, f"{operation_name} took {elapsed_time:.3f} seconds{extra_info}")
+        logger.log(
+            log_level, f"{operation_name} took {elapsed_time:.3f} seconds{extra_info}"
+        )

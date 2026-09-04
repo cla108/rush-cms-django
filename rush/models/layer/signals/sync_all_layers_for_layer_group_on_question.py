@@ -9,6 +9,7 @@ they are set-up to have the ALL_LAYERS behaviour. See the requirements below:
         will automatically get deleted via CASCADE on their layer foreign-keys.
 """
 
+from django.db.models import QuerySet
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -16,9 +17,13 @@ from rush.models.layer import Layer, LayerGroupOnQuestion, LayerOnLayerGroup
 
 
 @receiver(post_save, sender=LayerGroupOnQuestion)
-def add_all_layers_when_all_layers_behaviour_enabled(sender, instance, created, **kwargs):
+def add_all_layers_when_all_layers_behaviour_enabled(
+    sender, instance, created, **kwargs
+):
     if not isinstance(instance, LayerGroupOnQuestion):
-        raise ValueError(f"Expected {instance} to be a {LayerGroupOnQuestion.__class__}.")
+        raise ValueError(
+            f"Expected {instance} to be a {LayerGroupOnQuestion.__class__}."
+        )
     if instance.behaviour != LayerGroupOnQuestion.Behaviour.ALL_LAYERS:
         return None
 
@@ -41,7 +46,18 @@ def _all_layers_layer_order(layer_on_layer_group: LayerOnLayerGroup) -> str:
     """
     Sort by layer provider_state, and then alphabetically.
     """
-    return f'{str(layer_on_layer_group.layer.map_data.provider_state)}{layer_on_layer_group.layer.name}'
+    return f"{str(layer_on_layer_group.layer.map_data.provider_state)}{layer_on_layer_group.layer.name}"
+
+
+def _layers_to_order(group: LayerGroupOnQuestion) -> QuerySet[LayerOnLayerGroup]:
+    return group.layers.select_related(  # type: ignore
+        "layer",
+        "layer__map_data",
+    ).defer(
+        # needed optimization
+        "layer__serialized_leaflet_json",
+        "layer__map_data___geojson",
+    )
 
 
 @receiver(post_save, sender=Layer)
@@ -53,7 +69,9 @@ def add_layer_when_layer_created(sender, instance, created, **kwargs):
         return None
 
     # Only fetch IDs to avoid loading all layer group data
-    groups = LayerGroupOnQuestion.objects.filter(behaviour=LayerGroupOnQuestion.Behaviour.ALL_LAYERS).only("id")
+    groups = LayerGroupOnQuestion.objects.filter(
+        behaviour=LayerGroupOnQuestion.Behaviour.ALL_LAYERS
+    ).only("id")
     for group in groups:
         if group.layers.filter(layer_id=instance.id).exists():  # type: ignore
             # skip if layer already in group
@@ -64,9 +82,15 @@ def add_layer_when_layer_created(sender, instance, created, **kwargs):
             display_order=group.max_display_order() + 1,
         )
         # order layer-on-layer-groups in the layer group alphabetically
-        display_order = 0
-        for layer_on_layer_group in sorted(group.layers.all(), key=_all_layers_layer_order):  # type: ignore
+        layers_on_group = sorted(
+            _layers_to_order(group),
+            key=(
+                # sort by provider state, and then alphabetically.
+                lambda lolg: f"{str(lolg.layer.map_data.provider_state)}{lolg.layer.name}"
+            ),
+        )
+        for display_order, layer_on_layer_group in enumerate(layers_on_group):
             layer_on_layer_group.display_order = display_order
-            layer_on_layer_group.full_clean()
-            layer_on_layer_group.save()
-            display_order += 1
+        # A single UPDATE, rather than a full_clean() + save() per row: `display_order` is a
+        # sequential integer generated right here, so per-row validation only costs queries.
+        LayerOnLayerGroup.objects.bulk_update(layers_on_group, ["display_order"])

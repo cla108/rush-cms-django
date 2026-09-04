@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0094_alter_mapdata_campaign_link_alter_mapdata_map_link'),
+        ("rush", "0094_alter_mapdata_campaign_link_alter_mapdata_map_link"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='layer',
-            name='legendTitle',
-            field=models.CharField(blank=True, help_text='A title what the legend description represents on the map.', null=True),
+            model_name="layer",
+            name="legendTitle",
+            field=models.CharField(
+                blank=True,
+                help_text="A title what the legend description represents on the map.",
+                null=True,
+            ),
         ),
     ]

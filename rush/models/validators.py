@@ -6,6 +6,7 @@ from django.db.models.fields.files import FieldFile
 
 from rush.models import MimeType
 
+
 class FiletypeValidator:
     """
     Args:
@@ -62,9 +63,15 @@ def validate_only_integers_and_whitespace(value):
         raise ValidationError("This field must contain only digits and whitespace.")
 
 
-OGM_MAP_EXPLORE_RE = re.compile(r"^https://greenmap\.org/explore/maps/(?P<id>[0-9A-Za-z-]+)/?$")
-OGM_MAP_BROWSE_RE = re.compile(r"^https://greenmap\.org/browse/maps/(?P<id>[0-9A-Za-z-]+)/map-view/?$")
-OGM_CAMPAIGN_RE = re.compile(r"^https://greenmap\.org/explore/survey/(?P<id>[0-9A-Za-z-]+)/?$")
+OGM_MAP_EXPLORE_RE = re.compile(
+    r"^https://greenmap\.org/explore/maps/(?P<id>[0-9A-Za-z-]+)/?$"
+)
+OGM_MAP_BROWSE_RE = re.compile(
+    r"^https://greenmap\.org/browse/maps/(?P<id>[0-9A-Za-z-]+)/map-view/?$"
+)
+OGM_CAMPAIGN_RE = re.compile(
+    r"^https://greenmap\.org/explore/survey/(?P<id>[0-9A-Za-z-]+)/?$"
+)
 
 
 def validate_ogm_map_link(value: str) -> None:
@@ -105,9 +112,11 @@ def validate_ogm_campaign_link(value: str) -> None:
             )
         )
 
+
 ARCGIS_FEATURE_SERVER_RE = re.compile(
     r"^https:\/\/services\d+\.arcgis\.com\/[A-Za-z0-9]+\/ArcGIS\/rest\/services\/[A-Za-z0-9_]+\/FeatureServer\/\d+$"
 )
+
 
 def validate_arcgis_feature_server_link(value: str) -> None:
     """

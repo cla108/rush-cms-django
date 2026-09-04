@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0030_delete_deploylog'),
+        ("rush", "0030_delete_deploylog"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='historicalquestion',
-            name='slug',
+            model_name="historicalquestion",
+            name="slug",
             field=models.SlugField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='question',
-            name='slug',
+            model_name="question",
+            name="slug",
             field=models.SlugField(blank=True, max_length=255, null=True, unique=True),
         ),
     ]

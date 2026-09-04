@@ -15,16 +15,22 @@ class BasemapSourceOnQuestion(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, null=False)
     basemap_source = models.ForeignKey("BasemapSource", on_delete=models.CASCADE)
-    question = models.ForeignKey("Question", on_delete=models.CASCADE, related_name="basemaps")
+    question = models.ForeignKey(
+        "Question", on_delete=models.CASCADE, related_name="basemaps"
+    )
     is_default_for_question = models.BooleanField(default=False)
 
     def clean(self) -> None:
         # Check to make sure no other basemap-source-on-question is marked
         # as the default for this question (we can't have two defaults!)
         if (
-            BasemapSourceOnQuestion.objects.filter(question=self.question, is_default_for_question=True)
+            BasemapSourceOnQuestion.objects.filter(
+                question=self.question, is_default_for_question=True
+            )
             .exclude(id=self.id)
             .exists()
         ):
-            raise ValidationError("There can only be one default Basemap on a Question!")
+            raise ValidationError(
+                "There can only be one default Basemap on a Question!"
+            )
         return super().clean()

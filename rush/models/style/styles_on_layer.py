@@ -26,7 +26,9 @@ class StylesOnLayer(models.Model):
     )
     legend_description_strict_clean = models.BooleanField(default=True)
     popup_strict_clean = models.BooleanField(default=True)
-    display_order = models.PositiveIntegerField(default=0, blank=False, null=False, db_index=True, editable=True)
+    display_order = models.PositiveIntegerField(
+        default=0, blank=False, null=False, db_index=True, editable=True
+    )
 
     # Some expression that will be matched against a GeoJSON feature's properties
     # to decide whether this style will be applied to any given feature on the map.
@@ -38,4 +40,6 @@ class StylesOnLayer(models.Model):
 
     def clean(self) -> None:
         if self.popup:
-            self.popup = SummernoteTextCleaner.clean(self.popup, strict_clean=self.popup_strict_clean)
+            self.popup = SummernoteTextCleaner.clean(
+                self.popup, strict_clean=self.popup_strict_clean
+            )

@@ -2,7 +2,6 @@
 Add the Channel model and tag Questions, Layers and Initiatives onto channels.
 """
 
-
 import uuid
 from django.db import migrations, models
 

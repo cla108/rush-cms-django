@@ -47,5 +47,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(populate_new_domain, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            populate_new_domain, reverse_code=migrations.RunPython.noop
+        ),
     ]

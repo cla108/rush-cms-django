@@ -65,10 +65,6 @@ class Channel(models.Model):
         default="",
         help_text="An optional note about who this channel is for.",
     )
-    is_private = models.BooleanField(
-        default=False,
-        help_text="Private channels will eventually require a viewer to log in before their content is served.",
-    )
 
     objects: ChannelManager = ChannelManager()  # type: ignore
 

@@ -21,7 +21,9 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 (
                     "file",
@@ -50,7 +52,11 @@ class Migration(migrations.Migration):
                 null=True,
                 storage=rush.models.map_data.get_raster_storage,
                 upload_to="",
-                validators=[rush.models.validators.FiletypeValidator(invalid_names=None, valid_names=["TIFF"])],
+                validators=[
+                    rush.models.validators.FiletypeValidator(
+                        invalid_names=None, valid_names=["TIFF"]
+                    )
+                ],
             ),
         ),
         migrations.AlterField(
@@ -93,6 +99,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="icon",
             name="mime_type",
-            field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to="rush.mimetype"),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.DO_NOTHING, to="rush.mimetype"
+            ),
         ),
     ]

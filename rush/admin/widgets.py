@@ -164,7 +164,11 @@ class TiledForeignKeyWidget(Select):
             """
             related = getattr(self.instance, self.fk_name, None)
             if related is None:
-                logger.error("Cannot accss fk field '{}' on {}.".format(self.fk_name, self.instance))
+                logger.error(
+                    "Cannot accss fk field '{}' on {}.".format(
+                        self.fk_name, self.instance
+                    )
+                )
                 return ""
             selected = str(related.id) == self.id
             return "selected" if selected else ""

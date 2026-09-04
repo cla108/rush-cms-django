@@ -203,7 +203,9 @@ class LayerDuplicator(DuplicatorBase):
             )
 
             # create double-related tooltip (if it exists)
-            if tooltip := Tooltip.objects.filter(style_on_layer__id=styles_on_layer.id).first():
+            if tooltip := Tooltip.objects.filter(
+                style_on_layer__id=styles_on_layer.id
+            ).first():
                 Tooltip.objects.create(
                     style_on_layer=duplicate_style_on_layer,
                     label=tooltip.label,

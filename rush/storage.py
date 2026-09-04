@@ -67,7 +67,9 @@ class BackblazeStorageFactory:
             storage = S3Storage(
                 default_acl="public-read",
                 # Includes auth creds in Django FileField's urls when True. Not needed if bucket is public.
-                querystring_auth=False if validate_visibility == cls.Visibility.PUBLIC else True,
+                querystring_auth=(
+                    False if validate_visibility == cls.Visibility.PUBLIC else True
+                ),
                 access_key=settings.BACKBLAZE_APP_KEY_ID,
                 secret_key=settings.BACKBLAZE_APP_KEY,
                 endpoint_url=settings.BACKBLAZE_ENDPOINT_URL,
@@ -115,7 +117,9 @@ class BackblazeStorageFactory:
         Delete all previous versions of a file when saving.
         """
 
-        def save_fn(name: str | None, content: IO[Any], max_length: int | None = None) -> str:
+        def save_fn(
+            name: str | None, content: IO[Any], max_length: int | None = None
+        ) -> str:
             result = original_save(name, content, max_length)
             versions = list(bucket.object_versions.filter(Prefix=name))
             if len(versions) > 1:
@@ -136,7 +140,8 @@ class BackblazeStorageFactory:
         acl = bucket.Acl()
         grants = acl.grants
         is_public = any(
-            grant.get("Grantee", {}).get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers"
+            grant.get("Grantee", {}).get("URI")
+            == "http://acs.amazonaws.com/groups/global/AllUsers"
             and grant.get("Permission") in ["READ", "FULL_CONTROL"]
             for grant in grants
         )

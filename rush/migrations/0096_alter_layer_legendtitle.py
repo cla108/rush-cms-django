@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0095_layer_legendtitle'),
+        ("rush", "0095_layer_legendtitle"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='layer',
-            name='legendTitle',
-            field=models.CharField(blank=True, help_text='A title what the legend description represents on the map.', null=True, verbose_name='Legend Title'),
+            model_name="layer",
+            name="legendTitle",
+            field=models.CharField(
+                blank=True,
+                help_text="A title what the legend description represents on the map.",
+                null=True,
+                verbose_name="Legend Title",
+            ),
         ),
     ]

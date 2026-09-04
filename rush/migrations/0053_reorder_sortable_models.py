@@ -28,7 +28,7 @@ def reorder_models(apps, schema_editor):
                 if instance.display_order != index:
                     instance.display_order = index
                     instance.save(update_fields=["display_order"])
-            print(f"Successfully reordered model \"rush.{model_name}\"")
+            print(f'Successfully reordered model "rush.{model_name}"')
         except Exception as e:
             print(f"ERROR: Could not reorder rush.{model_name}: {e}")
 

@@ -40,7 +40,9 @@ class QuestionAdmin(DefaultChannelMixin, SortableAdminMixin, NestedModelAdmin): 
         LayerGroupOnQuestionInline,
     ]
     actions = ["duplicate_object"]
-    sortable_field_name = "display_order"  # Enable drag-and-drop for Questions in the list view
+    sortable_field_name = (
+        "display_order"  # Enable drag-and-drop for Questions in the list view
+    )
     # filter_horizontal = ["initiatives"]  # better admin editing for many-to-many fields
 
     @admin.display(description="Channels")
@@ -80,7 +82,9 @@ class QuestionAdmin(DefaultChannelMixin, SortableAdminMixin, NestedModelAdmin): 
     def duplicate_object(self, request, queryset):
         for obj in queryset:
             QuestionDuplicator(obj).duplicate()
-        self.message_user(request, f"Successfully duplicated {queryset.count()} item(s).")
+        self.message_user(
+            request, f"Successfully duplicated {queryset.count()} item(s)."
+        )
         return HttpResponseRedirect("?channel=all")
 
     def save_related(self, request, form, formsets, change):

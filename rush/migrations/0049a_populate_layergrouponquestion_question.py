@@ -16,12 +16,14 @@ def populate_question_field(apps, schema_editor):
             layer_group_on_question=layer_group
         ).first()
 
-        if layer_on_group and hasattr(layer_on_group, 'question'):
+        if layer_on_group and hasattr(layer_on_group, "question"):
             layer_group.question = layer_on_group.question
-            layer_group.save(update_fields=['question'])
+            layer_group.save(update_fields=["question"])
             print(f"Set question for LayerGroupOnQuestion {layer_group.id}")
         else:
-            print(f"WARNING: Could not find question for LayerGroupOnQuestion {layer_group.id}")
+            print(
+                f"WARNING: Could not find question for LayerGroupOnQuestion {layer_group.id}"
+            )
 
 
 def reverse_populate(apps, schema_editor):

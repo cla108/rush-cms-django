@@ -29,7 +29,9 @@ class LayerOnLayerGroup(models.Model):
         default=False,
         help_text="Whether the layer is active by default when a new question is loaded.",
     )
-    display_order = models.PositiveIntegerField(default=0, blank=False, null=False, db_index=True, editable=True)
+    display_order = models.PositiveIntegerField(
+        default=0, blank=False, null=False, db_index=True, editable=True
+    )
 
     def delete(self, using=None, keep_parents=False):
         self._prevent_delete_from_all_layers_group()
@@ -41,7 +43,10 @@ class LayerOnLayerGroup(models.Model):
         """
         from rush.models.layer.layer_group_on_question import LayerGroupOnQuestion
 
-        if self.layer_group_on_question.behaviour == LayerGroupOnQuestion.Behaviour.ALL_LAYERS:
+        if (
+            self.layer_group_on_question.behaviour
+            == LayerGroupOnQuestion.Behaviour.ALL_LAYERS
+        ):
             raise ValidationError(
                 "Cannot delete {} from {} because the group is set to contain all layers.".format(
                     self,
@@ -56,5 +61,9 @@ class LayerOnLayerGroup(models.Model):
         related_question = Question.objects.only("title").filter(id=related_lgoq.question_id).first()  # type: ignore
         return "{} on {}".format(
             related_layer.name if related_layer else "Deleted Layer",
-            related_question.title if related_question else "Deleted LayerGroupOnQuestion or Question",
+            (
+                related_question.title
+                if related_question
+                else "Deleted LayerGroupOnQuestion or Question"
+            ),
         )

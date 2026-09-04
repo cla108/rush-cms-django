@@ -30,7 +30,9 @@ class GuessedMimeType:
         """
 
         def __init__(self, filename: str):
-            super().__init__("The mimetype of file '{}' could not be parsed.".format(filename))
+            super().__init__(
+                "The mimetype of file '{}' could not be parsed.".format(filename)
+            )
 
     class Unsupported(BaseValidationError):
         """
@@ -38,7 +40,9 @@ class GuessedMimeType:
         but is currently unsupported by the RUSH app.
         """
 
-        def __init__(self, filename: str, valid: List["MimeType"], invalid: List["MimeType"]):
+        def __init__(
+            self, filename: str, valid: List["MimeType"], invalid: List["MimeType"]
+        ):
             super().__init__(
                 "The mimetype of file '{}' is currently not supported. Allowed types: {}. Disallowed types: {}.".format(
                     filename,
@@ -53,7 +57,13 @@ class GuessedMimeType:
         invalid type for the file at validation-time.
         """
 
-        def __init__(self, mimetype: "MimeType", filename: str, valid: List["MimeType"], invalid: List["MimeType"]):
+        def __init__(
+            self,
+            mimetype: "MimeType",
+            filename: str,
+            valid: List["MimeType"],
+            invalid: List["MimeType"],
+        ):
             super().__init__(
                 "The mimetype {} is invalid for file {}. Allowed types: {}. Disallowed types: {}.".format(
                     mimetype.human_name,

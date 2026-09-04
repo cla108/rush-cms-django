@@ -11,7 +11,9 @@ class Region(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
-        max_length=255, unique=True, help_text="Region name (e.g., 'Downtown', 'Victoria', 'Vancouver')"
+        max_length=255,
+        unique=True,
+        help_text="Region name (e.g., 'Downtown', 'Victoria', 'Vancouver')",
     )
     latitude = models.FloatField(
         help_text="Latitude coordinate for default map center",

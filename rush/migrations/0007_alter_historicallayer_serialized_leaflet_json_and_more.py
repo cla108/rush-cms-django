@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0006_alter_historicallayer_serialized_leaflet_json_and_more'),
+        ("rush", "0006_alter_historicallayer_serialized_leaflet_json_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='historicallayer',
-            name='serialized_leaflet_json',
+            model_name="historicallayer",
+            name="serialized_leaflet_json",
             field=models.JSONField(default=dict),
         ),
         migrations.AlterField(
-            model_name='layer',
-            name='serialized_leaflet_json',
+            model_name="layer",
+            name="serialized_leaflet_json",
             field=models.JSONField(default=dict),
         ),
     ]

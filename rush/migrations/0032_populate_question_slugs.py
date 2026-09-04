@@ -28,7 +28,10 @@ def populate_slugs(apps, schema_editor):
             try:
                 question.full_clean()
             except ValidationError as e:
-                print(f"WARNING: Duplicate slug found on question '{question.id}', generating a random slug...", e)
+                print(
+                    f"WARNING: Duplicate slug found on question '{question.id}', generating a random slug...",
+                    e,
+                )
                 question.slug = f"{question.slug}{uuid4().hex}"
             question.save()
 
@@ -58,5 +61,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(populate_slugs, reverse_code=migrations.RunPython.noop),
-        migrations.RunPython(populate_slugs_historical, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            populate_slugs_historical, reverse_code=migrations.RunPython.noop
+        ),
     ]

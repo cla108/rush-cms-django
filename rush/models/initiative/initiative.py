@@ -29,7 +29,9 @@ class Initiative(models.Model):
     )
 
     def clean(self) -> None:
-        self.content = SummernoteTextCleaner.clean(self.content, strict_clean=self.content_strict_clean)
+        self.content = SummernoteTextCleaner.clean(
+            self.content, strict_clean=self.content_strict_clean
+        )
 
     def __str__(self):
         return self.title

@@ -44,7 +44,9 @@ class Layer(models.Model):
     )
 
     def clean(self) -> None:
-        self.description = SummernoteTextCleaner.clean(self.description, strict_clean=self.description_strict_clean)
+        self.description = SummernoteTextCleaner.clean(
+            self.description, strict_clean=self.description_strict_clean
+        )
 
     def __str__(self):
         return self.name

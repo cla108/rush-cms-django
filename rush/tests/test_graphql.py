@@ -42,7 +42,9 @@ def _fake_info() -> SimpleNamespace:
 )
 def test_scope_request_to_channels(channels_arg: list[str] | None, expected: list[str]):
     info = _fake_info()
-    assert [channel.name for channel in scope_request_to_channels(info, channels_arg)] == expected
+    assert [
+        channel.name for channel in scope_request_to_channels(info, channels_arg)
+    ] == expected
     # nested resolvers must filter by the same channels as the root query they were reached through
     assert [channel.name for channel in request_channels(info)] == expected
 
@@ -53,21 +55,32 @@ def test_scope_request_to_channels(channels_arg: list[str] | None, expected: lis
     [
         (["not-a-channel"], "Unknown channel(s): 'not-a-channel'."),
         # a request fails if any one of the named channels is unknown
-        ([Channel.PUBLISHED_NAME, "not-a-channel"], "Unknown channel(s): 'not-a-channel'."),
+        (
+            [Channel.PUBLISHED_NAME, "not-a-channel"],
+            "Unknown channel(s): 'not-a-channel'.",
+        ),
         (["nope", "nada"], "Unknown channel(s): 'nope', 'nada'."),
     ],
 )
-def test_scope_request_to_unknown_channels_fails(channels_arg: list[str], expected_message: str):
-    with raises(GraphQLError, match=expected_message.replace("(", r"\(").replace(")", r"\)")):
+def test_scope_request_to_unknown_channels_fails(
+    channels_arg: list[str], expected_message: str
+):
+    with raises(
+        GraphQLError, match=expected_message.replace("(", r"\(").replace(")", r"\)")
+    ):
         scope_request_to_channels(_fake_info(), channels_arg)
 
 
 @mark.django_db
 def test_request_channels_defaults_when_no_root_query_scoped_them():
-    assert [channel.name for channel in request_channels(_fake_info())] == [Channel.DEFAULT_VIEW_CHANNEL]
+    assert [channel.name for channel in request_channels(_fake_info())] == [
+        Channel.DEFAULT_VIEW_CHANNEL
+    ]
 
 
-def _relative_to_absolute_link_params(tag: str, key: str, closing=True) -> list[tuple[str, str]]:
+def _relative_to_absolute_link_params(
+    tag: str, key: str, closing=True
+) -> list[tuple[str, str]]:
 
     def _tagify(link: str):
         if closing == True:
@@ -216,5 +229,7 @@ def _relative_to_absolute_link_params(tag: str, key: str, closing=True) -> list[
 )
 def test_convert_relative_links_to_absolute(relative, expected):
     base_media_url = "https://www.kagi.com/"
-    absolute = convert_relative_links_to_absolute(relative, base_media_url=base_media_url)
+    absolute = convert_relative_links_to_absolute(
+        relative, base_media_url=base_media_url
+    )
     assert expected == absolute

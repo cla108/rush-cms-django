@@ -15,7 +15,10 @@ class ChannelFilter(SimpleListFilter):
     def lookups(self, request, model_admin):  # type: ignore
         return (
             (None, "All"),
-            *((channel.name, channel.name.capitalize()) for channel in Channel.objects.all()),
+            *(
+                (channel.name, channel.name.capitalize())
+                for channel in Channel.objects.all()
+            ),
         )
 
     def choices(self, cl):  # type: ignore

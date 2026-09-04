@@ -7,18 +7,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rush', '0111_mapdata_arcgis_feature_server_link_and_more'),
+        ("rush", "0111_mapdata_arcgis_feature_server_link_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='mapdata',
-            name='arcgis_cache_seconds',
-            field=models.IntegerField(blank=True, default=86400, null=True, validators=[django.core.validators.MinValueValidator(1800), django.core.validators.MaxValueValidator(2592000)]),
+            model_name="mapdata",
+            name="arcgis_cache_seconds",
+            field=models.IntegerField(
+                blank=True,
+                default=86400,
+                null=True,
+                validators=[
+                    django.core.validators.MinValueValidator(1800),
+                    django.core.validators.MaxValueValidator(2592000),
+                ],
+            ),
         ),
         migrations.AddField(
-            model_name='mapdata',
-            name='arcgis_last_fetched_at',
+            model_name="mapdata",
+            name="arcgis_last_fetched_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

@@ -46,7 +46,9 @@ class Question(models.Model):
         help_text="Primary region where this question appears",
         related_name="questions",
     )
-    display_order = models.PositiveIntegerField(default=0, blank=False, null=False, db_index=True, editable=True)
+    display_order = models.PositiveIntegerField(
+        default=0, blank=False, null=False, db_index=True, editable=True
+    )
     channels = models.ManyToManyField(
         to="Channel",
         related_name="questions",

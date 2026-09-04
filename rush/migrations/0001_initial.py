@@ -25,7 +25,9 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 (
                     "status",
@@ -46,7 +48,9 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 ("name", models.CharField(max_length=255)),
             ],
@@ -56,7 +60,9 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 ("name", models.CharField(max_length=255, unique=True)),
                 (
@@ -98,7 +104,9 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 ("name", models.CharField(max_length=255)),
                 (
@@ -546,17 +554,23 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 (
                     "image",
-                    models.ImageField(blank=True, null=True, upload_to="initiative_images/"),
+                    models.ImageField(
+                        blank=True, null=True, upload_to="initiative_images/"
+                    ),
                 ),
                 ("title", models.CharField(max_length=255)),
                 ("content", models.TextField()),
                 (
                     "tags",
-                    models.ManyToManyField(related_name="initiatives", to="rush.initiativetag"),
+                    models.ManyToManyField(
+                        related_name="initiatives", to="rush.initiativetag"
+                    ),
                 ),
             ],
         ),
@@ -565,13 +579,17 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 ("name", models.CharField(max_length=255)),
                 ("description", models.TextField()),
                 (
                     "map_data",
-                    models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="rush.mapdata"),
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT, to="rush.mapdata"
+                    ),
                 ),
             ],
         ),
@@ -624,12 +642,16 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 ("title", models.CharField(max_length=255)),
                 (
                     "image",
-                    models.ImageField(blank=True, null=True, upload_to="question_images/"),
+                    models.ImageField(
+                        blank=True, null=True, upload_to="question_images/"
+                    ),
                 ),
                 ("initiatives", models.ManyToManyField(to="rush.initiative")),
                 (
@@ -687,7 +709,9 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 ("title", models.CharField(max_length=255)),
                 ("content", models.TextField()),
@@ -707,16 +731,22 @@ class Migration(migrations.Migration):
             fields=[
                 (
                     "id",
-                    models.UUIDField(default=uuid.uuid4, primary_key=True, serialize=False),
+                    models.UUIDField(
+                        default=uuid.uuid4, primary_key=True, serialize=False
+                    ),
                 ),
                 ("feature_mapping", models.TextField(default="true")),
                 (
                     "layer",
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="rush.layer"),
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rush.layer"
+                    ),
                 ),
                 (
                     "style",
-                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="rush.style"),
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rush.style"
+                    ),
                 ),
             ],
         ),

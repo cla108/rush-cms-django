@@ -32,10 +32,14 @@ class QuestionTab(models.Model):
         related_name="tabs",
     )
     slug = models.SlugField(max_length=255)
-    display_order = models.PositiveIntegerField(default=0, blank=False, null=False, db_index=True, editable=True)
+    display_order = models.PositiveIntegerField(
+        default=0, blank=False, null=False, db_index=True, editable=True
+    )
 
     def clean(self) -> None:
-        self.content = SummernoteTextCleaner.clean(self.content, strict_clean=self.content_strict_clean)
+        self.content = SummernoteTextCleaner.clean(
+            self.content, strict_clean=self.content_strict_clean
+        )
 
     def __str__(self):
         return f"{self.title} for question: '{self.question.title}'"

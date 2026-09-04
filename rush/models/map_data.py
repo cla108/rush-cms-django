@@ -24,7 +24,9 @@ def get_raster_storage() -> S3Storage | FileSystemStorage:
     """
     if settings.DEBUG or "pytest" in sys.modules:
         # Don't try to connect to Backblaze in a dev environment or during tests
-        return FileSystemStorage(location=f"{settings.MEDIA_ROOT}/debug_raster_image_storage")
+        return FileSystemStorage(
+            location=f"{settings.MEDIA_ROOT}/debug_raster_image_storage"
+        )
     return BackblazeStorageFactory.create_from_bucket_name(
         settings.BACKBLAZE_RASTER_BUCKET_NAME,
         validate_visibility=BackblazeStorageFactory.Visibility.PUBLIC,
@@ -44,7 +46,9 @@ class MapData(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, null=False)
     name = models.CharField(max_length=255, unique=True)
-    provider_state = models.CharField(max_length=255, choices=ProviderState.choices, default=ProviderState.UNSET)
+    provider_state = models.CharField(
+        max_length=255, choices=ProviderState.choices, default=ProviderState.UNSET
+    )
 
     # Geojson provider fields
     _geojson = models.JSONField(default=dict, null=True, blank=True)
@@ -77,7 +81,10 @@ class MapData(models.Model):
         max_length=2000,
         null=True,
         blank=True,
-        validators = [URLValidator(schemes=["https"]), validate_arcgis_feature_server_link],
+        validators=[
+            URLValidator(schemes=["https"]),
+            validate_arcgis_feature_server_link,
+        ],
     )
 
     arcgis_cache_seconds = models.IntegerField(
@@ -88,7 +95,7 @@ class MapData(models.Model):
         validators=[
             # allowed between 30 mins and ~1 month
             MinValueValidator(1800),
-            MaxValueValidator(2592000)
+            MaxValueValidator(2592000),
         ],
     )
 

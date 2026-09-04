@@ -17,7 +17,14 @@ from rush.models.duplicators import InitiativeDuplicator
 @register(Initiative)
 class InitiativeAdmin(DefaultChannelMixin, SuperuserStrictCleanMixin, ModelAdmin):
     form = InitiativeForm
-    list_display = ["title", "link", "content_preview", "image_preview", "get_tags", "channels_preview"]
+    list_display = [
+        "title",
+        "link",
+        "content_preview",
+        "image_preview",
+        "get_tags",
+        "channels_preview",
+    ]
     list_filter = [ChannelFilter]
     content_preview = truncate_admin_text_from("content")
     autocomplete_fields = [
@@ -32,7 +39,9 @@ class InitiativeAdmin(DefaultChannelMixin, SuperuserStrictCleanMixin, ModelAdmin
     def duplicate_object(self, request, queryset):
         for obj in queryset:
             InitiativeDuplicator(obj).duplicate()
-        self.message_user(request, f"Successfully duplicated {queryset.count()} item(s).")
+        self.message_user(
+            request, f"Successfully duplicated {queryset.count()} item(s)."
+        )
         return HttpResponseRedirect("?channel=all")
 
     @display(description="Channels")

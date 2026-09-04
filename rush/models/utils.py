@@ -58,7 +58,9 @@ def compress_image(image: FieldFile, pixel_width=128) -> ContentFile:
         )
 
         original_name = image.name
-        compressed_name = f"compressed_{original_name.split('/')[-1].rsplit('.', 1)[0]}.webp"
+        compressed_name = (
+            f"compressed_{original_name.split('/')[-1].rsplit('.', 1)[0]}.webp"
+        )
 
         # Return a ContentFile with name
         return ContentFile(img_io.getvalue(), name=compressed_name)
@@ -244,7 +246,9 @@ _PRESERVED_BLOCK_TAGS = frozenset(
 
 def _has_block_child_for_dediv(tag: BSTag) -> bool:
     return any(
-        isinstance(c, BSTag) and c.name and c.name.lower() in (_JUNK_BLOCK_TAGS | _PRESERVED_BLOCK_TAGS)
+        isinstance(c, BSTag)
+        and c.name
+        and c.name.lower() in (_JUNK_BLOCK_TAGS | _PRESERVED_BLOCK_TAGS)
         for c in tag.children
     )
 
